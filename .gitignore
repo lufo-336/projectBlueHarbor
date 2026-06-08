@@ -10,6 +10,10 @@ documentazione/claude/CLAUDE.md
 documentazione/WSA_Piano-didattico_GAANT.pdf
 # Schede operative degli sprint per Trello (uso interno, non nel repo)
 documentazione/claude/sprint/
+# Guida frontend (passata direttamente al collega, non nel repo)
+documentazione/claude/guida-frontend-sprint-1.md
+# Screenshot board (uso interno)
+documentazione/claude/{3814E207-1706-4D98-938C-73E59118A546}.png
 
 # ==========================================================================
 # Backend — .NET / C# / Visual Studio   (cartella /backend)

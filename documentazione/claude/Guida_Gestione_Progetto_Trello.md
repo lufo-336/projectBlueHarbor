@@ -87,7 +87,7 @@ Finché l'endpoint non esiste, i Frontend lavorano "a vuoto" sull'interfaccia co
 ### 2.3 Il formato di ogni Card (template — usatelo sempre)
 
 ```
-TITOLO:        verbo + cosa     (es. "Creare tabella Navi")
+TITOLO:        verbo + cosa     (es. "Creare tabella Ships")
 ETICHETTA:     l'area (colore)
 MEMBRO:        la persona assegnata
 SCADENZA:      fine dello sprint
@@ -139,8 +139,8 @@ Una card va in **✅ Fatto** solo se:
 ▸ **[Luca] Creare e configurare la board Trello** (come da Parte 2)
 
 ▸ **[Dev SQL + Dev C#] Accordo sui nomi e i tipi** *(la card più importante di Sprint 0)*
-- Decidere convenzione: nomi dominio in **italiano** (`Navi`, `Banchine`, `Impostazioni`), stati in **inglese** (`Pending/Assigned/Departed`)
-- Concordare nomi esatti delle colonne e i tipi (es. `Id INT`, `Nome VARCHAR`, ...)
+- Convenzione: **tutto il codice/identificatori in inglese** (`Ships`, `Berths`, `Settings`), stati `Pending/Assigned/Departed`
+- Concordare nomi esatti delle colonne e i tipi (es. `Id INT`, `Name VARCHAR`, ...)
 - Scriverli nel file `/docs/modello-dati.md` → fonte di verità per tutti
 
 ▸ **[Tutti] Sprint Planning dello Sprint 1**
@@ -153,12 +153,12 @@ Una card va in **✅ Fatto** solo se:
 
 **Database — 🟦 Dev SQL**
 ▸ **[SQL] Creare lo schema delle tabelle**
-- Tabella `Banchine` (`Id`, `Nome`, `Dimensione`)
-- Tabella `Navi` (`Id`, `Nome`, `Dimensione`, `GiornoArrivo`, `DurataOccupazione`, `Stato`, `BanchinaId` FK nullable, `GiornoInizioOccupazione` nullable)
-- Tabella `Impostazioni` (`Chiave`, `Valore`) per il giorno corrente
+- Tabella `Berths` (`Id`, `Name`, `Size`)
+- Tabella `Ships` (`Id`, `Name`, `Size`, `ArrivalDay`, `Duration`, `Status`, `BerthId` FK nullable, `OccupationStartDay` nullable)
+- Tabella `Settings` (`Key`, `Value`) per il giorno corrente
 ▸ **[SQL] Inserire i dati iniziali (seeding)**
-- 8 banchine: 1 XL, 1 L, 2 M, 4 S
-- Giorno corrente virtuale = `1`
+- 8 berths: 1 XL, 1 L, 2 M, 4 S
+- Setting `CurrentVirtualDay` = `1`
 
 **Backend — 🟩 Dev C#**
 ▸ **[C#] Creare il progetto ASP.NET Core Web API**
@@ -166,17 +166,17 @@ Una card va in **✅ Fatto** solo se:
 - Connection string SQL Server in `appsettings.json`
 - Predisporre l'accesso dati con ADO.NET
 ▸ **[C#] Creare le classi del modello**
-- Classi `Nave` e `Banchina` (secondo `/docs/modello-dati.md`)
-- Enum `StatoNave` = `Pending`, `Assigned`, `Departed`
+- Classi `Ship` e `Berth` (secondo `/docs/modello-dati.md`)
+- Enum `ShipStatus` = `Pending`, `Assigned`, `Departed`
 ▸ **[C#] Endpoint giorno corrente**
-- `GET /api/sistema/giorno-corrente` legge il valore dal DB e lo restituisce in JSON
+- `GET /api/system/current-day` legge il valore dal DB e lo restituisce in JSON: `{ "currentDay": 1 }`
 
 **Frontend — 🟨 Dev Frontend 1 + 2**
 ▸ **[FE1] Creare l'app React con Vite** e pulire i file di default
 ▸ **[FE1] Organizzare le cartelle**: `/components`, `/views`, `/services`
 ▸ **[FE2] Topbar fissa**
-- Mostra il "Giorno Virtuale Corrente"
-- Selettore ruolo (Operatore / Scheduler)
+- Mostra il "Virtual day"
+- Selettore ruolo (Operator / Scheduler)
 - Stato globale `currentRole` (Context React)
 ▸ **[FE2] Collegamento API di base**
 - Funzione che all'avvio chiama l'endpoint del giorno corrente e lo stampa in Topbar
@@ -184,7 +184,7 @@ Una card va in **✅ Fatto** solo se:
 **QA — 🟪 Luca**
 ▸ **[Luca] Test end-to-end Sprint 1**
 - Cambio il giorno a mano nel DB → dopo refresh il frontend mostra il nuovo giorno
-- Verifico che le 8 banchine nel DB siano esatte (1 XL, 1 L, 2 M, 4 S)
+- Verifico che le 8 berths nel DB siano esatte (1 XL, 1 L, 2 M, 4 S)
 
 ---
 
@@ -192,29 +192,29 @@ Una card va in **✅ Fatto** solo se:
 **Obiettivo dimostrabile:** l'Operatore scrive un nome, crea una nave, e la vede comparire in tabella.
 
 **Database — 🟦 Dev SQL**
-▸ **[SQL] Query di persistenza navi**
-- `INSERT` nave (con `BanchinaId` e `GiornoInizioOccupazione` = `NULL`)
-- `SELECT` elenco navi (ordinato per Id o giorno di inserimento)
+▸ **[SQL] Query di persistenza ships**
+- `INSERT` ship (con `BerthId` e `OccupationStartDay` = `NULL`)
+- `SELECT` elenco ships (ordinato per Id o giorno di inserimento)
 
 **Backend — 🟩 Dev C#**
 ▸ **[C#] Servizio di generazione casuale (`ShipGeneratorService`)**
-- Dimensione casuale tra `S/M/L/XL`
-- Giorno di arrivo = giorno corrente + random `1..30`
-- Durata occupazione = random `3..15`
-▸ **[C#] Endpoint creazione nave**
-- `POST /api/navi` (riceve solo il nome) → genera valori, stato `Pending`, salva
-▸ **[C#] Endpoint lista navi**
-- `GET /api/navi` → elenco completo
+- `Size` casuale tra `S/M/L/XL`
+- `ArrivalDay` = giorno corrente + random `1..30`
+- `Duration` = random `3..15`
+▸ **[C#] Endpoint creazione ship**
+- `POST /api/ships` (riceve solo il `Name`) → genera valori, `Status` `Pending`, salva
+▸ **[C#] Endpoint lista ships**
+- `GET /api/ships` → elenco completo
 
 **Frontend — 🟨 Dev Frontend 1 + 2**
-▸ **[FE1] Vista Operatore (`OperatorView`)** — visibile solo se ruolo = Operatore; layout in 2 sezioni (form sopra, storico sotto)
-▸ **[FE1] Form registrazione nave** — input "Nome", pulsante "Registra", bottone disabilitato durante il caricamento
-▸ **[FE2] Tabella navi registrate** — colonne: Nome, Dimensione, Giorno Arrivo, Durata, Stato
-▸ **[FE2] Aggiornamento automatico** — `useEffect` carica le navi all'apertura e dopo ogni inserimento
+▸ **[FE1] Vista Operatore (`OperatorView`)** — visibile solo se `currentRole` = Operator; layout in 2 sezioni (form sopra, storico sotto)
+▸ **[FE1] Form registrazione ship** — input "Name", pulsante "Register", bottone disabilitato durante il caricamento
+▸ **[FE2] Tabella ships registrate** — colonne: `Name`, `Size`, `ArrivalDay`, `Duration`, `Status`
+▸ **[FE2] Aggiornamento automatico** — `useEffect` carica le ships all'apertura e dopo ogni inserimento
 
 **QA — 🟪 Luca**
 ▸ **[Luca] Test regole di generazione**
-- Inserisco 20 navi → controllo via SQL: arrivo mai oltre 30 gg, durata sempre 3-15, tutte `Pending`, banchina vuota
+- Inserisco 20 ships → controllo via SQL: `ArrivalDay` mai oltre 30 gg, `Duration` sempre 3-15, tutte `Pending`, berth vuota
 
 ---
 
@@ -228,27 +228,27 @@ e il sistema calcola da solo il primo giorno libero (accodamento).
 
 **Database — 🟦 Dev SQL**
 ▸ **[SQL] Query di lettura per lo Scheduler**
-- Navi in stato `Pending`
-- Banchine con le loro navi `Assigned`, ordinate per `GiornoInizioOccupazione`
+- Ships in stato `Pending`
+- Berths con le loro ships `Assigned`, ordinate per `OccupationStartDay`
 ▸ **[SQL] Query di assegnazione**
-- `UPDATE` nave: imposta `BanchinaId`, `GiornoInizioOccupazione`, stato → `Assigned`
+- `UPDATE` ship: imposta `BerthId`, `OccupationStartDay`, `Status` → `Assigned`
 
 **Backend — 🟩 Dev C#**
-▸ **[C#] Validazione compatibilità dimensione** — una nave va solo su banchina della sua stessa dimensione
-▸ **[C#] Algoritmo di accodamento (primo slot libero)** — calcola il primo giorno in cui la banchina è libera per l'intera durata della nave
-▸ **[C#] Endpoint dashboard scheduler** — `GET /api/schedulazione/dashboard` (navi pendenti + stato banchine)
-▸ **[C#] Endpoint assegnazione** — `POST /api/schedulazione/assegna` (riceve NaveId + BanchinaId, calcola lo slot, salva)
+▸ **[C#] Validazione compatibilità Size** — una ship va solo su berth della sua stessa `Size`
+▸ **[C#] Algoritmo di accodamento (primo slot libero)** — calcola il primo giorno in cui la berth è libera per l'intera `Duration` della ship
+▸ **[C#] Endpoint dashboard scheduler** — `GET /api/scheduling/dashboard` (ships Pending + stato berths)
+▸ **[C#] Endpoint assegnazione** — `POST /api/scheduling/assign` (riceve `ShipId` + `BerthId`, calcola lo slot, salva)
 
 **Frontend — 🟨 Dev Frontend 1 + 2**
-▸ **[FE1] Vista Scheduler (`SchedulerView`)** — visibile solo se ruolo = Scheduler
-▸ **[FE1] Lista navi Pending** — con dimensione, giorno arrivo, durata
-▸ **[FE2] Tabellone delle 8 banchine** — griglia (CSS Grid/Flex) con i "blocchi" di occupazione delle navi assegnate
-▸ **[FE2] Azione di assegnazione** — menu con le sole banchine compatibili, invio alla POST, aggiornamento immediato
+▸ **[FE1] Vista Scheduler (`SchedulerView`)** — visibile solo se `currentRole` = Scheduler
+▸ **[FE1] Lista ships Pending** — con `Size`, `ArrivalDay`, `Duration`
+▸ **[FE2] Tabellone delle 8 berths** — griglia (CSS Grid/Flex) con i "blocchi" di occupazione delle ships assegnate
+▸ **[FE2] Azione di assegnazione** — menu con le sole berths compatibili, invio alla POST, aggiornamento immediato
 
 **QA — 🟪 Luca**
 ▸ **[Luca] Test sovrapposizione e vincoli**
-- Nave A (arriva g2, durata 5) su Banchina 1, poi Nave B (stessa misura, arriva g3) sulla stessa → B deve iniziare al **giorno 7**
-- Tentativo di assegnare una nave a banchina di misura diversa → bloccato/segnalato
+- Ship A (`ArrivalDay` 2, `Duration` 5) su Berth 1, poi Ship B (stessa `Size`, `ArrivalDay` 3) sulla stessa → B deve iniziare al **giorno 7**
+- Tentativo di assegnare una ship a berth di `Size` diversa → bloccato/segnalato
 
 ---
 
@@ -257,21 +257,21 @@ e il sistema calcola da solo il primo giorno libero (accodamento).
 
 **Database — 🟦 Dev SQL**
 ▸ **[SQL] Query del cambio giornaliero**
-- `UPDATE` incremento del giorno corrente in `Impostazioni`
-- `UPDATE` di massa: navi `Assigned` → `Departed` se `GiornoInizioOccupazione + Durata <= nuovoGiorno`
+- `UPDATE` incremento di `CurrentVirtualDay` in `Settings`
+- `UPDATE` di massa: ships `Assigned` → `Departed` se `OccupationStartDay + Duration <= newCurrentDay`
 
 **Backend — 🟩 Dev C#**
-▸ **[C#] Servizio tempo (`TimeService.AdvanceDay`)** — in **transazione**: incrementa il giorno + rilascia le navi; se una fallisce → rollback. Niente assegnazioni automatiche (è fuori scope!)
-▸ **[C#] Endpoint Next Day** — `POST /api/tempo/next-day` → restituisce il nuovo giorno
+▸ **[C#] Servizio tempo (`TimeService.AdvanceDay`)** — in **transazione**: incrementa il giorno + rilascia le ships; se una fallisce → rollback. Niente assegnazioni automatiche (è fuori scope!)
+▸ **[C#] Endpoint Next Day** — `POST /api/time/next-day` → restituisce il nuovo `currentDay`
 
 **Frontend — 🟨 Dev Frontend 1 + 2**
-▸ **[FE1] Pulsante "Avanza Giorno"** in Topbar, collegato alla POST
-▸ **[FE2] Refresh globale** — al successo aggiorna giorno, lista navi Operatore e timeline Scheduler; le navi `Departed` spariscono dalle liste attive (o mostrate come "concluse")
+▸ **[FE1] Pulsante "Next Day"** in Topbar, collegato alla POST
+▸ **[FE2] Refresh globale** — al successo aggiorna `currentDay`, lista ships Operator e timeline Scheduler; le ships `Departed` spariscono dalle liste attive (o mostrate come "concluse")
 
 **QA — 🟪 Luca**
 ▸ **[Luca] Test tenuta temporale**
-- Nave arriva g2, durata 3, assegnata → resta `Assigned` nei giorni 2-3-4, passa a `Departed` al **giorno 5**
-- Verifico che la banchina liberata sia di nuovo assegnabile per date successive
+- Ship `ArrivalDay` 2, `Duration` 3, assegnata → resta `Assigned` nei giorni 2-3-4, passa a `Departed` al **giorno 5**
+- Verifico che la berth liberata sia di nuovo assegnabile per date successive
 
 ---
 
@@ -279,8 +279,8 @@ e il sistema calcola da solo il primo giorno libero (accodamento).
 **Obiettivo dimostrabile:** app robusta a prova di errore + documento architetturale + presentazione pronta.
 
 **Database — 🟦 Dev SQL**
-▸ **[SQL] Vincoli di integrità** — FK `FK_Navi_Banchine` attiva
-▸ **[SQL] Script di RESET demo** — pulisce le navi e riporta il giorno a 1 (per la presentazione)
+▸ **[SQL] Vincoli di integrità** — FK `FK_Ships_Berths` attiva
+▸ **[SQL] Script di RESET demo** — pulisce le ships e riporta `CurrentVirtualDay` a 1 (per la presentazione)
 
 **Backend — 🟩 Dev C#**
 ▸ **[C#] Gestione errori** — try-catch nei controller, status code corretti (es. `400` se assegnazione incompatibile)
@@ -288,7 +288,7 @@ e il sistema calcola da solo il primo giorno libero (accodamento).
 
 **Frontend — 🟨 Dev Frontend 1 + 2**
 ▸ **[FE1] Messaggi di errore e stati di caricamento** — avvisi puliti se una chiamata fallisce; pulsanti disabilitati durante l'attesa
-▸ **[FE2] Controllo rigido dei ruoli** — l'Operatore non vede i comandi dello Scheduler e viceversa
+▸ **[FE2] Controllo rigido dei ruoli** — l'Operator non vede i comandi dello Scheduler e viceversa
 
 **Gestione / QA — 🟪 Luca + Tutti**
 ▸ **[Luca] Code review di conformità** — verificare che NON ci siano funzioni fuori scope (no ottimizzazioni automatiche, no riassegnazioni dopo l'assegnazione)

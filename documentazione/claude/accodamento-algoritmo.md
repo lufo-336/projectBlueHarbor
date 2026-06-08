@@ -2,7 +2,7 @@
 
 > Il pezzo logico più delicato del progetto (Sprint 3). Qui lo fissiamo con **esempi
 > numerici** e lo confrontiamo con i test ufficiali della roadmap, **prima** di scrivere
-> codice. Chi sviluppa il C# parte da qui.
+> codice. Chi sviluppa il C# parte da qui. Identificatori in inglese, prosa in italiano.
 
 ---
 
@@ -13,7 +13,7 @@ Tutto l'algoritmo ruota attorno a due definizioni. Il 90% dei bug nasce dallo sb
 
 ### A) Quanti giorni occupa una nave
 
-Una nave con **inizio = S** e **durata = D** occupa i giorni:
+Una nave con **inizio = S** (`OccupationStartDay`) e **durata = D** (`Duration`) occupa i giorni:
 
 ```
 da S   fino a   S + D − 1     (cioè D giorni consecutivi)
@@ -22,7 +22,7 @@ da S   fino a   S + D − 1     (cioè D giorni consecutivi)
 e la banchina **torna libera dal giorno `S + D`**.
 
 > 🔗 È coerente con la regola ufficiale del Next Day: una nave diventa `Departed` quando
-> `GiornoInizioOccupazione + Durata <= giornoCorrente`. Cioè è "ancora lì" fino a `S+D−1`
+> `OccupationStartDay + Duration <= currentDay`. Cioè è "ancora lì" fino a `S+D−1`
 > e "andata via" da `S+D`. Le due cose **devono** combaciare.
 
 ### B) Quando due periodi si sovrappongono
@@ -39,63 +39,63 @@ a1 <= b2   E   a2 <= b1
 
 ## 2. La regola, in una frase
 
-> La nave parte dal **primo giorno utile ≥ il suo giorno di arrivo** in cui la banchina è
-> **libera per tutta la sua durata**.
+> La nave parte dal **primo giorno utile ≥ il suo `ArrivalDay`** in cui la banchina è
+> **libera per tutta la sua `Duration`**.
 
 ### La ricetta passo-passo (per il dev C#)
 
-Per assegnare una nave (arrivo `A`, durata `D`) a una banchina:
+Per assegnare una nave (`ArrivalDay = A`, `Duration = D`) a una berth:
 
-1. Prendi tutte le navi **già `Assigned`** su quella banchina e i loro intervalli
-   `[Sᵢ, Sᵢ+Dᵢ−1]`. *(Le navi `Departed` non contano: occupavano giorni ormai passati. Le
-   `Pending` non sono su nessuna banchina.)*
+1. Prendi tutte le ships **già `Assigned`** su quella berth e i loro intervalli
+   `[Sᵢ, Sᵢ+Dᵢ−1]`. *(Le ships `Departed` non contano: occupavano giorni ormai passati. Le
+   `Pending` non sono su nessuna berth.)*
 2. Ordina questi intervalli per giorno di inizio.
 3. Parti con un candidato **`S = A`** (non si può iniziare prima dell'arrivo).
 4. Scorri gli intervalli in ordine: se la finestra `[S, S+D−1]` si sovrappone all'intervallo
    `[Sᵢ, Eᵢ]` (usa la formula B), **spingi il candidato subito dopo**: `S = Eᵢ + 1`.
 5. Quando hai controllato tutti gli intervalli senza più sovrapposizioni, **`S` è il giorno
-   di inizio**. Salvi `GiornoInizioOccupazione = S` e stato → `Assigned`.
+   di inizio**. Salvi `OccupationStartDay = S` e `Status` → `Assigned`.
 
-> Nota sulla compatibilità: la banchina deve essere della **stessa dimensione** della nave.
+> Nota sulla compatibilità: la berth deve essere della **stessa `Size`** della nave.
 > Questo controllo viene **prima** dell'accodamento (se incompatibile, non si assegna affatto).
 
 ---
 
 ## 3. Esempio 1 — Accodamento (il test ufficiale della roadmap)
 
-Banchina **M-1** (dimensione M). Due navi M assegnate in sequenza.
+Berth **M-1** (`Size` = M). Due ships M assegnate in sequenza.
 
-**Nave A** — arrivo `2`, durata `5`. Banchina vuota.
+**Ship A** — `ArrivalDay` 2, `Duration` 5. Berth vuota.
 - Candidato `S = 2`. Nessun intervallo esistente → nessuna sovrapposizione.
-- **Inizio = 2.** Occupa i giorni `2–6` (5 giorni). Libera dal **7**.
+- **`OccupationStartDay` = 2.** Occupa i giorni `2–6` (5 giorni). Libera dal **7**.
 
-**Nave B** — arrivo `3`, durata `4`. Stessa banchina M-1.
+**Ship B** — `ArrivalDay` 3, `Duration` 4. Stessa berth M-1.
 - Candidato `S = 3`. Intervallo esistente di A = `[2, 6]`.
 - Si sovrappone? `3 <= 6` E `2 <= 3+4−1=6` → **sì**. Spingo: `S = 6 + 1 = 7`.
-- Non ci sono altri intervalli → **Inizio = 7.** Occupa i giorni `7–10`. Libera dall'**11**.
+- Non ci sono altri intervalli → **`OccupationStartDay` = 7.** Occupa i giorni `7–10`. Libera dall'**11**.
 
 ```
 Giorno:   1   2   3   4   5   6   7   8   9  10  11
-Nave A:       [===============]
+Ship A:       [===============]
               (2 ─────────── 6)
-Nave B:                           [===========]
+Ship B:                           [===========]
                                   (7 ──────── 10)
 ```
 
-✅ **Corrisponde al test della roadmap**: "Nave A (durata 5, arriva g2) … Nave B (arriva g3)
-… verificare che venga assegnata **a partire dal giorno 7**." La durata di B non cambia il
+✅ **Corrisponde al test della roadmap**: "Ship A (durata 5, arriva g2) … Ship B (arriva g3)
+… verificare che venga assegnata **a partire dal giorno 7**." La `Duration` di B non cambia il
 risultato: conta solo che il suo arrivo (3) cade dentro l'occupazione di A, quindi slitta a 7.
 
 ---
 
 ## 4. Esempio 2 — Ciclo di vita + Next Day (l'altro test ufficiale)
 
-**Nave** — arrivo `2`, durata `3`, assegnata con inizio `2`.
+**Ship** — `ArrivalDay` 2, `Duration` 3, assegnata con `OccupationStartDay` 2.
 - Occupa i giorni `2–4` (cioè 2, 3, 4). Libera dal **5** (`2 + 3 = 5`).
 
-Avanziamo il tempo con "Next Day" e guardiamo lo stato giorno per giorno:
+Avanziamo il tempo con "Next Day" e guardiamo lo `Status` giorno per giorno:
 
-| Giorno corrente | `Inizio + Durata = 5` ≤ giorno? | Stato nave | Banchina |
+| currentDay | `OccupationStartDay + Duration = 5` ≤ currentDay? | Status | Berth |
 |:---:|:---:|:---:|:---:|
 | 2 | 5 ≤ 2 → no | **Assigned** | occupata |
 | 3 | 5 ≤ 3 → no | **Assigned** | occupata |
@@ -103,7 +103,7 @@ Avanziamo il tempo con "Next Day" e guardiamo lo stato giorno per giorno:
 | 5 | 5 ≤ 5 → **sì** | **Departed** | **libera** |
 
 ✅ **Corrisponde al test della roadmap**: "nei giorni 2, 3 e 4 risulti `Assigned` … passi a
-`Departed` esattamente all'inizio del giorno 5." E dal giorno 5 la banchina è di nuovo
+`Departed` esattamente all'inizio del giorno 5." E dal giorno 5 la berth è di nuovo
 assegnabile.
 
 ---
@@ -113,19 +113,19 @@ assegnabile.
 Questo caso non è nei test ufficiali ma **succederà di sicuro**, perché lo Scheduler assegna
 le navi nell'ordine che vuole (non per forza in ordine di arrivo). Serve una decisione.
 
-Banchina **S-1**. Già assegnate:
-- **Nave X** — inizio `1`, durata `3` → occupa `1–3`, libera dal `4`.
-- **Nave Y** — inizio `8`, durata `3` → occupa `8–10`, libera dal `11`.
+Berth **S-1**. Già assegnate:
+- **Ship X** — `OccupationStartDay` 1, `Duration` 3 → occupa `1–3`, libera dal `4`.
+- **Ship Y** — `OccupationStartDay` 8, `Duration` 3 → occupa `8–10`, libera dal `11`.
 
 Si crea un **buco libero nei giorni 4-5-6-7**. Ora arriva da assegnare:
-- **Nave Z** — arrivo `2`, durata `2`.
+- **Ship Z** — `ArrivalDay` 2, `Duration` 2.
 
 ```
 Giorno:   1   2   3   4   5   6   7   8   9  10  11
-Nave X:   [=======]
-Nave Y:                           [===========]
+Ship X:   [=======]
+Ship Y:                           [===========]
 BUCO:                 ↑   ↑   ↑   ↑
-Nave Z?               ?   ?   ?   ?
+Ship Z?               ?   ?   ?   ?
 ```
 
 Due comportamenti possibili:
@@ -148,11 +148,11 @@ La **ricetta del §2 implementa la strategia A** (con `S=2` → sovrappone X `[1
 
 ## 6. Casi limite da tenere a mente
 
-1. **Banchina vuota** → l'inizio è semplicemente il giorno di arrivo della nave (Esempio 1,
-   Nave A). Non è il giorno corrente: è l'arrivo.
-2. **Nave mai assegnata il cui arrivo è già passato** (sono stati premuti tanti "Next Day"
+1. **Berth vuota** → l'inizio è semplicemente l'`ArrivalDay` della nave (Esempio 1,
+   Ship A). Non è il giorno corrente: è l'arrivo.
+2. **Ship mai assegnata il cui arrivo è già passato** (sono stati premuti tanti "Next Day"
    mentre era `Pending`): l'inizio non dovrebbe essere nel passato. Guardia consigliata:
-   `S = max(A, giornoCorrente)` come punto di partenza, poi applica la ricetta. *(Da
+   `S = max(A, currentDay)` come punto di partenza, poi applica la ricetta. *(Da
    confermare: la specifica non lo cita esplicitamente.)*
 3. **Buco troppo piccolo** per la durata: la ricetta lo salta da sola e va al buco/coda
    successiva (la formula di sovrapposizione spinge `S` oltre ogni intervallo che non ci sta).
@@ -164,14 +164,14 @@ La **ricetta del §2 implementa la strategia A** (con `S=2` → sovrappone X `[1
 ## 7. Pseudocodice di riferimento (non è codice C#, è la logica)
 
 ```
-funzione calcolaInizio(arrivo A, durata D, listaNaviAssegnateSullaBanchina):
-    intervalli = [ [Sᵢ, Sᵢ + Dᵢ − 1]  per ogni nave assegnata ]
+funzione computeStartDay(arrivalDay A, duration D, assignedShipsOnBerth):
+    intervalli = [ [Sᵢ, Sᵢ + Dᵢ − 1]  per ogni ship assegnata ]
     ordina intervalli per inizio crescente
 
-    S = A                         # (oppure max(A, giornoCorrente), vedi caso limite 2)
-    per ogni [inizioᵢ, fineᵢ] in intervalli:
-        se ( S <= fineᵢ  E  inizioᵢ <= S + D − 1 ):   # si sovrappongono?
-            S = fineᵢ + 1                              # spingi subito dopo
+    S = A                         # (oppure max(A, currentDay), vedi caso limite 2)
+    per ogni [startᵢ, endᵢ] in intervalli:
+        se ( S <= endᵢ  E  startᵢ <= S + D − 1 ):   # si sovrappongono?
+            S = endᵢ + 1                             # spingi subito dopo
     ritorna S
 ```
 
