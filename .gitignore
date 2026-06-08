@@ -3,17 +3,12 @@
 # Copre: backend .NET / C# (Visual Studio) + frontend React/Node + SQL + OS
 # ==========================================================================
 
-# --- File personali / sensibili (NON pubblicare sul repo condiviso) ---
-# Contesto personale di corso (email, avanzamento moduli) — tenere locale
-documentazione/claude/CLAUDE.md
-# Documento didattico marcato "Sensitivity: Internal"
-documentazione/WSA_Piano-didattico_GAANT.pdf
-# Schede operative degli sprint per Trello (uso interno, non nel repo)
-documentazione/claude/sprint/
-# Guida frontend (passata direttamente al collega, non nel repo)
-documentazione/claude/guida-frontend-sprint-1.md
-# Screenshot board (uso interno)
-documentazione/claude/{3814E207-1706-4D98-938C-73E59118A546}.png
+# --- Documentazione: tenuta solo in locale, NON sul repo condiviso ---
+# Scelta del team: su GitHub resta solo il progetto, nessun documento.
+documentazione/
+
+# --- Versione corretta / di revisione: solo locale ---
+02-correzioni/
 
 # ==========================================================================
 # Backend — .NET / C# / Visual Studio   (cartella /backend)
