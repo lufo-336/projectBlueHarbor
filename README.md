@@ -1,66 +1,69 @@
-# BlueHarbor Terminal 🚢
+# BlueHarbor Terminal
 
-Progetto **Learning by Project** — ITS ICT Piemonte, corso *Web Solutions Architect* (2025-2027).
+BlueHarbor Terminal e' un'applicazione web interna sviluppata come progetto "Learning by
+Project" del corso Web Solutions Architect (ITS ICT Piemonte, biennio 2025-2027).
 
-Semplice piattaforma web interna per gestire un piccolo terminal container fittizio:
-registrazione navi, pianificazione delle banchine e coordinamento del lavoro tra operatori.
-Tutti i dati e le regole sono **fittizi e a scopo didattico**.
+## Il progetto
 
----
+BlueHarbor e' una compagnia di spedizioni fittizia che gestisce un piccolo terminal container.
+Oggi le operazioni del terminal sono coordinate a mano, con poca visibilita' e diverse
+inefficienze. L'applicazione serve a digitalizzare tre attivita' di base: registrare le navi
+in arrivo, pianificare l'uso delle banchine e coordinare il lavoro tra gli operatori.
 
-## Cosa fa l'applicazione
+Tutti i dati, i nomi e le regole sono fittizi e creati a scopo didattico.
 
-- **Operatore**: registra le navi in arrivo (il sistema genera a caso dimensione, giorno di
-  arrivo e durata di occupazione). La nave nasce in stato `Pending`.
-- **Scheduler**: assegna le navi alle **8 banchine fisse** (1 XL, 1 L, 2 M, 4 S), rispettando
-  la compatibilità di dimensione e calcolando il primo slot temporale libero (accodamento).
-- **Tempo virtuale**: niente real-time. Un pulsante **"Next Day"** avanza il giorno; le navi
-  che hanno finito l'occupazione passano a `Departed` e liberano la banchina.
+## Come funziona
 
-Ciclo di vita di una nave: `Pending → Assigned → Departed`.
+L'applicazione prevede due ruoli:
 
-## Stack tecnologico
+- Operatore: registra le navi in arrivo. Per ogni nuova nave il sistema genera automaticamente
+  la dimensione, il giorno di arrivo e la durata di occupazione della banchina.
+- Scheduler: assegna le navi alle banchine disponibili, rispettando la compatibilita' di
+  dimensione e calcolando il primo periodo libero della banchina.
 
-| Livello | Tecnologia |
-|---|---|
-| Database | SQL Server (T-SQL, ADO.NET) |
-| Backend | ASP.NET Core Web API (C#) |
-| Frontend | React + Vite |
+Il tempo non e' reale. L'applicazione tiene un "giorno corrente virtuale" che avanza con un
+pulsante "Next Day". Quando una nave completa la sua occupazione viene segnata come partita e
+libera la banchina.
 
-Architettura **3-tier**: React → C# Web API → SQL Server.
+Il porto ha otto banchine fisse: una XL, una L, due M e quattro S. Ogni banchina puo' ospitare
+solo navi della propria dimensione.
+
+Una nave attraversa tre stati: in attesa di assegnazione (Pending), assegnata a una banchina
+(Assigned), occupazione conclusa (Departed).
+
+## Tecnologie
+
+- Database: SQL Server
+- Backend: ASP.NET Core Web API (C#)
+- Frontend: React con Vite
+
+L'architettura e' a tre livelli: l'interfaccia React comunica con le API in C#, che a loro
+volta leggono e scrivono sul database SQL Server.
 
 ## Struttura del repository
 
 ```
-/backend         → applicazione ASP.NET Core Web API (C#)   [in arrivo]
-/frontend        → applicazione React + Vite                [in arrivo]
-/database        → script SQL (schema, seeding, query)      [in arrivo]
-/docs            → documentazione architetturale            [in arrivo]
-/documentazione  → materiale di progetto e pianificazione
+/backend         applicazione ASP.NET Core Web API (C#)   [in arrivo]
+/frontend        applicazione React + Vite                [in arrivo]
+/database        script SQL (schema, seeding, query)      [in arrivo]
+/docs            documentazione architetturale            [in arrivo]
+/documentazione  materiale di progetto e pianificazione
 ```
 
-## 📋 Documentazione di pianificazione
+## Documentazione
 
-Tutto il materiale per gestire il progetto è in `documentazione/claude/`:
+Il materiale di pianificazione si trova in `documentazione/claude/`:
 
-- **[Guida_Gestione_Progetto_Trello.md](documentazione/claude/Guida_Gestione_Progetto_Trello.md)**
-  — metodo Scrum, configurazione Trello e roadmap a sprint (per lezioni da 4h)
-- **[modello-dati.md](documentazione/claude/modello-dati.md)** — schema del database (contratto
-  condiviso tra Dev SQL e Dev C#)
-- **[accodamento-algoritmo.md](documentazione/claude/accodamento-algoritmo.md)** — la logica di
-  assegnazione delle banchine, validata con esempi numerici
-- **[blueharbor_roadmap.md](documentazione/claude/blueharbor_roadmap.md)** — scomposizione
-  tecnica in 5 tappe
+- `Guida_Gestione_Progetto_Trello.md` - metodo di lavoro, Trello e roadmap a sprint
+- `modello-dati.md` - schema del database
+- `accodamento-algoritmo.md` - la logica di assegnazione delle banchine, con esempi
+- `blueharbor_roadmap.md` - scomposizione tecnica in tappe
 
-## 👥 Team e ruoli
+## Team
 
-| Ruolo | Responsabilità |
-|---|---|
-| Dev C# | Backend .NET: logica, algoritmi, API |
-| Dev SQL | Database: schema, query, transazioni |
-| Dev Frontend ×2 | App React |
-| Gestione (Luca) | Coordinamento, QA, integrazione, documentazione |
+Il progetto e' realizzato da un gruppo di cinque persone, con ruoli dedicati a database,
+backend C#, frontend e coordinamento.
 
 ## Stato del progetto
 
-🟡 **Sprint 0 — Setup & pianificazione.** Lo sviluppo del codice inizia nello Sprint 1.
+Sprint 0 - Setup e pianificazione. Lo sviluppo del codice inizia nello Sprint 1.
