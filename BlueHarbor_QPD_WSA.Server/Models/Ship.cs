@@ -1,117 +1,31 @@
-﻿using System; // <--- Messo in cima con la S maiuscola
+﻿using System;
+using System.Collections.Generic;
 
-namespace BlueHarbor.Models
+namespace BlueHarbor_QPD_WSA.Server.Models;
+
+public partial class Ship
 {
-    public class Ship
-    {
-        // Oggetto Random condiviso per evitare duplicati nei calcoli veloci
-        private static readonly Random _random = new Random();
+    public int Id { get; set; }
 
-        private int id;
-        private string name;
-        private string dimension;
-        private int arrival_day; // <--- Corretto l'errore di battitura (aveva 3 'r')
-        private int occupancy_duration;
-        private string notes; // Se non la usi puoi lasciarla o toglierla
-        private string state;
+    public string Name { get; set; } = null!;
 
-        public int Id { get => id; set => id = value; }
-        public string Name { get => name; set => name = value; }
+    public string Size { get; set; } = null!;
 
-        public string Dimension
-        {
-            get => dimension;
-            set
-            {
-                if (value != "S" && value != "M" && value != "L" && value != "XL")
-                {
-                    throw new ArgumentException("Dimension must be 'S', 'M', 'L' or 'XL'.", nameof(value));
-                }
-                dimension = value;
-            }
-        } // <--- Mancava questa graffa
+    public int ArrivalDay { get; set; }
 
-        public int ArrivalDay
-        {
-            get => arrival_day;
-            set
-            {
-                if (value < 0 || value > 30)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), "Arrival day must be between 0 and 30.");
-                }
-                arrival_day = value;
-            }
-        }
+    public int DurationDays { get; set; }
 
-        public int OccupancyDuration
-        {
-            get => occupancy_duration;
-            set
-            {
-                if (value < 3 || value > 15)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), "Occupancy duration must be between 3 and 15 days.");
-                }
-                occupancy_duration = value;
-            }
-        }
+    public string Status { get; set; } = null!;
 
-        public string State
-        {
-            get => state;
-            set
-            {
-                if (value != "Pending" && value != "Assigned" && value != "Departed")
-                {
-                    throw new ArgumentException("The state must be 'Pending', 'Assigned' or 'Departed'.", nameof(value));
-                }
-                state = value;
-            }
-        } // <--- Mancava questa graffa
+    public int? DockId { get; set; }
 
-        // Primo Costruttore completo
-        public Ship(int id, string name, string dimension, int arrival_day, int occupancy_duration, string state)
-        {
-            Id = id;
-            Name = name;
-            Dimension = dimension;
-            ArrivalDay = arrival_day;
-            OccupancyDuration = occupancy_duration;
-            State = state;
-        }
+    public int? AllocationStartDay { get; set; }
 
-        // Secondo Costruttore con dati randomici
-        public Ship(int id, string name)
-        {
-            Id = id;
-            Name = name;
-            State = "Pending";
-            Dimension = RandomDimension();
-            ArrivalDay = RandomArrivalDay();
-            OccupancyDuration = RandomOccupancyDuration();
-        }
+    public string? Notes { get; set; }
 
-        // Metodi Random migliorati usando l'istanza condivisa _random
-        public int RandomArrivalDay()
-        {
-            return _random.Next(0, 31);
-        }
+    public byte[] RowVersion { get; set; } = null!;
 
-        public int RandomOccupancyDuration()
-        {
-            return _random.Next(3, 16);
-        }
+    public virtual Assignment? Assignment { get; set; }
 
-        public string RandomDimension()
-        {
-            string[] dimensioni = { "S", "M", "L", "XL" };
-            return dimensioni[_random.Next(dimensioni.Length)];
-        }
-
-        public override string ToString()
-        {
-            return $"Ship [Id={Id}, Name={Name}, Dimension={Dimension}, ArrivalDay={ArrivalDay}, OccupancyDuration={OccupancyDuration}, State={State}]";
-        }
-    } // <--- Mancava la chiusura della classe
+    public virtual Berth? Dock { get; set; }
 }
