@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="blueharbor_qpd_wsa.client/blueharbor_qpd_wsa.client.esproj">
+    <Build />
+    <Deploy />
+  </Project>
+  <Project Path="BlueHarbor_QPD_WSA.Server/BlueHarbor_QPD_WSA.Server.csproj" />
+</Solution>

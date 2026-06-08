@@ -1,0 +1,6 @@
+@BlueHarbor_QPD_WSA.Server_HostAddress = http://localhost:5279
+
+GET {{BlueHarbor_QPD_WSA.Server_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
