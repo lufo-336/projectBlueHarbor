@@ -1,15 +1,36 @@
-// Punto unico di accesso alle API del backend.
-const BASE_URL = '/api'
+// services/api.js
+const API_URL = 'http://localhost:5000/api';
 
-/**
- * Legge il giorno corrente virtuale dal backend.
- * @returns {Promise<number>} il numero del giorno corrente
- */
-export async function getCurrentDay() {
-  const response = await fetch(`${BASE_URL}/system/current-day`)
-  if (!response.ok) {
-    throw new Error(`Errore ${response.status} nel recupero del giorno corrente`)
+export const getShips = async () => {
+  try {
+    const response = await fetch(`${API_URL}/ships`);
+    if (!response.ok) {
+      throw new Error('Errore nel caricamento delle navi');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Errore getShips:', error);
+    throw error;
   }
-  const data = await response.json()
-  return data.currentDay
-}
+};
+
+export const createShip = async (name) => {
+  try {
+    const response = await fetch(`${API_URL}/ships`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ name }),
+    });
+    
+    if (!response.ok) {
+      throw new Error('Errore nella creazione della nave');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Errore createShip:', error);
+    throw error;
+  }
+};

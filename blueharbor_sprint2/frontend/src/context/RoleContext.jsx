@@ -1,25 +1,29 @@
-import { createContext, useContext, useState } from 'react'
+// context/RoleContext.jsx
+import React, { createContext, useContext, useState } from 'react';
 
-// Ruoli previsti dall'applicazione (vedi roadmap: Operator / Scheduler).
-export const ROLES = ['Operator', 'Scheduler']
+// Creo il context
+const RoleContext = createContext();
 
-const RoleContext = createContext(null)
+// Hook personalizzato - ESPORTO CON NOME { useRole }
+export const useRole = () => {
+  const context = useContext(RoleContext);
+  if (!context) {
+    throw new Error('useRole deve essere usato all\'interno di RoleProvider');
+  }
+  return context;
+};
 
-// Stato globale del ruolo corrente, condiviso da tutta l'app.
-export function RoleProvider({ children }) {
-  const [role, setRole] = useState(ROLES[0])
+// Provider - ESPORTO CON NOME { RoleProvider }
+export const RoleProvider = ({ children }) => {
+  const [role, setRole] = useState('Operator'); // Default per test
+
+  const changeRole = (newRole) => {
+    setRole(newRole);
+  };
 
   return (
-    <RoleContext.Provider value={{ role, setRole, roles: ROLES }}>
+    <RoleContext.Provider value={{ role, changeRole }}>
       {children}
     </RoleContext.Provider>
-  )
-}
-
-export function useRole() {
-  const context = useContext(RoleContext)
-  if (!context) {
-    throw new Error('useRole deve essere usato dentro un RoleProvider')
-  }
-  return context
-}
+  );
+};
