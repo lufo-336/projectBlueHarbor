@@ -1,0 +1,26 @@
+.topbar {
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  padding: 0.75rem 1.5rem;
+  background: #0d3b66;
+  color: #fff;
+}
+
+.topbar-brand {
+  font-weight: 700;
+}
+
+.topbar-day {
+  margin-left: auto;
+}
+
+.topbar-role select {
+  margin-left: 0.25rem;
+}
+
+.content {
+  padding: 1.5rem;
+}

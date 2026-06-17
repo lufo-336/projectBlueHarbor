@@ -7,8 +7,11 @@
 # Scelta del team: su GitHub resta solo il progetto, nessun documento.
 documentazione/
 
-# --- Versione corretta / di revisione: solo locale ---
-02-correzioni/
+# --- Archivio e materiale di lavoro: solo locale ---
+# Su GitHub va solo blueharbor_sprint2 (la versione principale).
+blueharbor_sprint1/
+blueharbor_claude/
+*.zip
 
 # ==========================================================================
 # Backend — .NET / C# / Visual Studio   (cartella /backend)
