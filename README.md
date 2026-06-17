@@ -43,16 +43,17 @@ volta leggono e scrivono sul database SQL Server.
 ## Struttura del repository
 
 ```
-/backend         applicazione ASP.NET Core Web API (C#)   [in arrivo]
-/frontend        applicazione React + Vite                [in arrivo]
-/database        script SQL (schema, seeding, query)      [in arrivo]
-/docs            documentazione architetturale            [in arrivo]
-/documentazione  materiale di progetto e pianificazione
+/BlueHarbor_QPD_WSA.Server      backend ASP.NET Core Web API (C#)
+/blueharbor_qpd_wsa.client      client Vite (scaffold Visual Studio)
+/frontend                       applicazione React + Vite
+/database                       script SQL (schema, seeding, query)
+BlueHarbor_QPD_WSA.slnx         solution Visual Studio
 ```
 
 ## Documentazione
 
-Il materiale di pianificazione si trova in `documentazione/claude/`:
+Il materiale di pianificazione e' mantenuto in locale (non versionato) nella cartella
+`documentazione/claude/`:
 
 - `Guida_Gestione_Progetto_Trello.md` - metodo di lavoro, Trello e roadmap a sprint
 - `modello-dati.md` - schema del database
