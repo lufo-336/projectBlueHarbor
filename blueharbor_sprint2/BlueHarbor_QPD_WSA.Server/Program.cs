@@ -1,4 +1,5 @@
 using BlueHarbor_QPD_WSA.Server.Models;
+using BlueHarbor_QPD_WSA.Server.Services;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -6,9 +7,12 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<BlueHarborContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(o =>
+        o.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi();
+builder.Services.AddScoped<ShipGeneratorService>();
 
 var app = builder.Build();
 
