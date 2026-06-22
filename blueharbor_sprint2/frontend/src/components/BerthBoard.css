@@ -1,0 +1,182 @@
+/* frontend/src/components/BerthBoard.css */
+.berth-board {
+  background: white;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.berth-board h2 {
+  margin-top: 0;
+  color: #2c3e50;
+  border-bottom: 2px solid #e74c3c;
+  padding-bottom: 12px;
+  font-size: 20px;
+}
+
+/* ✅ Griglia CSS Grid con 8 berths (4 colonne) */
+.berth-board__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin: 20px 0;
+}
+
+.berth-board__berth {
+  border: 2px solid #ecf0f1;
+  border-radius: 10px;
+  padding: 16px;
+  min-height: 140px;
+  transition: all 0.3s ease;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Stato Disponibile - Verde */
+.berth-board__berth--available {
+  border-color: #2ecc71;
+  background: #f0fff4;
+}
+
+.berth-board__berth--available:hover {
+  transform: scale(1.03);
+  box-shadow: 0 4px 16px rgba(46, 204, 113, 0.25);
+  border-color: #27ae60;
+}
+
+/* Stato Occupato - Rosso */
+.berth-board__berth--occupied {
+  border-color: #e74c3c;
+  background: #fff5f5;
+}
+
+.berth-board__berth--occupied:hover {
+  transform: scale(1.03);
+  box-shadow: 0 4px 16px rgba(231, 76, 60, 0.25);
+  border-color: #c0392b;
+}
+
+.berth-board__berth-number {
+  font-weight: bold;
+  font-size: 16px;
+  color: #2c3e50;
+  margin-bottom: 4px;
+}
+
+.berth-board__berth-size {
+  font-size: 13px;
+  color: #7f8c8d;
+  margin-bottom: 10px;
+}
+
+.berth-board__berth-status {
+  color: #27ae60;
+  font-weight: 600;
+  font-size: 14px;
+  margin-top: auto;
+  text-align: center;
+  padding: 6px;
+  background: rgba(46, 204, 113, 0.1);
+  border-radius: 4px;
+}
+
+/* Dettagli della nave occupante */
+.berth-board__berth-ship {
+  margin-top: 8px;
+  padding: 10px;
+  background: rgba(231, 76, 60, 0.08);
+  border-radius: 6px;
+  border-left: 3px solid #e74c3c;
+  flex: 1;
+}
+
+.berth-board__berth-ship .ship-name {
+  font-weight: bold;
+  color: #c0392b;
+  margin-bottom: 4px;
+  font-size: 15px;
+}
+
+.berth-board__berth-ship .ship-details {
+  font-size: 12px;
+  color: #7f8c8d;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.berth-board__berth-ship .ship-details span {
+  padding: 2px 0;
+}
+
+/* Legenda */
+.berth-board__legend {
+  display: flex;
+  gap: 24px;
+  padding: 15px 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-top: 15px;
+  flex-wrap: wrap;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: #2c3e50;
+}
+
+.legend-color {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 2px solid #bdc3c7;
+}
+
+.legend-color.available {
+  background: #2ecc71;
+  border-color: #27ae60;
+}
+
+.legend-color.occupied {
+  background: #e74c3c;
+  border-color: #c0392b;
+}
+
+/* ✅ Responsive Design */
+@media (max-width: 1200px) {
+  .berth-board__grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+}
+
+@media (max-width: 992px) {
+  .berth-board__grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .berth-board__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .berth-board h2 {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .berth-board__grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .berth-board__berth {
+    min-height: 100px;
+  }
+}

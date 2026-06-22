@@ -15,7 +15,7 @@ export const useRole = () => {
 
 // Provider - ESPORTO CON NOME { RoleProvider }
 export const RoleProvider = ({ children }) => {
-  const [role, setRole] = useState('Operator'); // Default per test
+  const [role, setRole] = useState('Scheduler'); // Default per test
 
   const changeRole = (newRole) => {
     setRole(newRole);

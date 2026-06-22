@@ -1,0 +1,58 @@
+/* frontend/src/components/SchedulerView.css */
+.scheduler-view {
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.scheduler-view h1 {
+  margin-bottom: 30px;
+  color: #2c3e50;
+  font-size: 28px;
+  border-bottom: 3px solid #3498db;
+  padding-bottom: 15px;
+}
+
+.scheduler-view__layout {
+  display: flex;
+  gap: 30px;
+  align-items: flex-start;
+}
+
+.scheduler-view__sidebar {
+  flex: 0 0 350px;
+  min-width: 300px;
+}
+
+.scheduler-view__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.scheduler-view__loading {
+  text-align: center;
+  padding: 50px;
+  font-size: 18px;
+  color: #7f8c8d;
+}
+
+.scheduler-view__error {
+  text-align: center;
+  padding: 50px;
+  color: #e74c3c;
+  background: #fde8e8;
+  border-radius: 8px;
+  font-size: 16px;
+}
+
+/* Responsive per schermi piccoli */
+@media (max-width: 992px) {
+  .scheduler-view__layout {
+    flex-direction: column;
+  }
+  
+  .scheduler-view__sidebar {
+    flex: 1;
+    width: 100%;
+  }
+}
