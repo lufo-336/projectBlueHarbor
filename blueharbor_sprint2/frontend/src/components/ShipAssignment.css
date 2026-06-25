@@ -1,0 +1,97 @@
+/* frontend/src/components/ShipAssignment.css */
+.ship-assignment {
+  padding: 10px 0;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ship-assignment h4 {
+  margin: 0 0 12px 0;
+  color: #2c3e50;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.ship-assignment__select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid #bdc3c7;
+  border-radius: 6px;
+  font-size: 14px;
+  margin-bottom: 10px;
+  background: white;
+  transition: border-color 0.3s;
+  cursor: pointer;
+}
+
+.ship-assignment__select:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.ship-assignment__select:disabled {
+  background: #ecf0f1;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.ship-assignment__button {
+  width: 100%;
+  padding: 12px;
+  background: #27ae60;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.ship-assignment__button:hover:not(:disabled) {
+  background: #2ecc71;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+}
+
+.ship-assignment__button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.ship-assignment__button:disabled {
+  background: #bdc3c7;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.ship-assignment__no-berths {
+  color: #e67e22;
+  font-size: 13px;
+  margin: 5px 0 10px 0;
+  background: #fef9f0;
+  padding: 8px 12px;
+  border-radius: 4px;
+  border-left: 3px solid #e67e22;
+}
+
+.ship-assignment__error {
+  color: #e74c3c;
+  font-size: 13px;
+  margin-top: 8px;
+  background: #fde8e8;
+  padding: 8px 12px;
+  border-radius: 4px;
+  border-left: 3px solid #e74c3c;
+}

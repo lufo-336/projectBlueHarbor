@@ -1,10 +1,8 @@
-// context/RoleContext.jsx
+// frontend/src/context/RoleContext.jsx
 import React, { createContext, useContext, useState } from 'react';
 
-// Creo il context
 const RoleContext = createContext();
 
-// Hook personalizzato - ESPORTO CON NOME { useRole }
 export const useRole = () => {
   const context = useContext(RoleContext);
   if (!context) {
@@ -13,16 +11,19 @@ export const useRole = () => {
   return context;
 };
 
-// Provider - ESPORTO CON NOME { RoleProvider }
 export const RoleProvider = ({ children }) => {
-  const [role, setRole] = useState('Operator'); // Default per test
+  const [role, setRole] = useState('Scheduler');
 
+  // ✅ ESPONI sia changeRole che setRole per compatibilità
   const changeRole = (newRole) => {
     setRole(newRole);
   };
 
+  // ✅ Lista dei ruoli disponibili
+  const roles = ['Operator', 'Scheduler'];
+
   return (
-    <RoleContext.Provider value={{ role, changeRole }}>
+    <RoleContext.Provider value={{ role, setRole, changeRole, roles }}>
       {children}
     </RoleContext.Provider>
   );
