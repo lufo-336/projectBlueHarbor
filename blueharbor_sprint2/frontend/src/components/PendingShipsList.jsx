@@ -6,7 +6,6 @@ import './PendingShipsList.css';
 const PendingShipsList = ({ ships, onShipAssigned }) => {
   const [selectedShip, setSelectedShip] = useState(null);
 
-  // Se non ci sono navi pending
   if (!ships || ships.length === 0) {
     return (
       <div className="pending-ships-list">
@@ -24,7 +23,7 @@ const PendingShipsList = ({ ships, onShipAssigned }) => {
       <div className="pending-ships-list__items">
         {ships.map((ship) => (
           <div 
-            key={ship.id || ship._id}
+            key={ship.id}
             className={`pending-ships-list__item ${selectedShip?.id === ship.id ? 'selected' : ''}`}
             onClick={() => setSelectedShip(ship)}
           >
@@ -32,7 +31,6 @@ const PendingShipsList = ({ ships, onShipAssigned }) => {
               <strong>{ship.name}</strong>
             </div>
             
-            {/* ✅ Dettagli: Size, ArrivalDay, Duration */}
             <div className="pending-ships-list__item-details">
               <div className="detail">
                 <span className="detail-label">Size:</span>
@@ -40,9 +38,7 @@ const PendingShipsList = ({ ships, onShipAssigned }) => {
               </div>
               <div className="detail">
                 <span className="detail-label">Arrival Day:</span>
-                <span className="detail-value">
-                  {ship.arrivalDay ? new Date(ship.arrivalDay).toLocaleDateString() : 'N/D'}
-                </span>
+                <span className="detail-value">{ship.arrivalDay || 'N/D'}</span>
               </div>
               <div className="detail">
                 <span className="detail-label">Duration:</span>
@@ -50,7 +46,6 @@ const PendingShipsList = ({ ships, onShipAssigned }) => {
               </div>
             </div>
             
-            {/* ✅ Azione di assegnazione */}
             {selectedShip?.id === ship.id && (
               <div className="pending-ships-list__assignment">
                 <ShipAssignment 

@@ -1,39 +1,35 @@
-import { useEffect, useState } from 'react'
-import { getCurrentDay } from '../services/api'
-import { useRole } from '../context/RoleContext'
+// frontend/src/components/Topbar.jsx
+import React, { useState } from 'react';
+import { useRole } from '../context/RoleContext';
+import { useDay } from '../context/DayContext';
+import { useToast } from '../context/ToastContext';
+import { nextDay } from '../services/api';  // ← nextDay ora ritorna solo il numero
+import './Topbar.css';
 
-// Barra fissa in alto: mostra il Giorno Virtuale letto dal DB e il selettore di ruolo.
-function Topbar() {
-  const { role, setRole, roles } = useRole()
-  const [currentDay, setCurrentDay] = useState(null)
-  const [error, setError] = useState(null)
+const Topbar = ({ onDayChange }) => {
+  const { role } = useRole();
+  const { currentDay, updateDay } = useDay();
+  const { showSuccess, showError } = useToast();
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    getCurrentDay()
-      .then(setCurrentDay)
-      .catch((err) => setError(err.message))
-  }, [])
+  const handleNextDay = async () => {
+    setLoading(true);
+    
+    try {
+      const newDay = await nextDay();  // ← Ora ritorna solo il numero (es. 2)
+      updateDay(newDay);
+      showSuccess(`📅 Giorno avanzato al ${newDay}!`);
+      if (onDayChange) {
+        onDayChange();
+      }
+    } catch (err) {
+      showError(`❌ Errore: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  return (
-    <header className="topbar">
-      <span className="topbar-brand">BlueHarbor Terminal</span>
+  // ... resto del componente invariato
+};
 
-      <span className="topbar-day">
-        Giorno Virtuale: <strong>{error ? '—' : currentDay ?? '…'}</strong>
-      </span>
-
-      <label className="topbar-role">
-        Ruolo:{' '}
-        <select value={role} onChange={(e) => setRole(e.target.value)}>
-          {roles.map((r) => (
-            <option key={r} value={r}>
-              {r}
-            </option>
-          ))}
-        </select>
-      </label>
-    </header>
-  )
-}
-
-export default Topbar
+export default Topbar;

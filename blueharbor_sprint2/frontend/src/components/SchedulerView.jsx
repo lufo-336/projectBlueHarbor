@@ -1,65 +1,63 @@
 // frontend/src/components/SchedulerView.jsx
 import React, { useState, useEffect } from 'react';
 import { useRole } from '../context/RoleContext';
+import { useDay } from '../context/DayContext';
+import { useToast } from '../context/ToastContext';
 import PendingShipsList from './PendingShipsList';
 import BerthBoard from './BerthBoard';
-import { getShipsByStatus, getBerths, getAssignments } from '../services/api';
+import LoadingSpinner from './common/LoadingSpinner';
+import { getSchedulerDashboard } from '../services/api';  // ← NUOVA API
 import './SchedulerView.css';
 
-const SchedulerView = () => {
+const SchedulerView = ({ refreshTrigger }) => {
   const { role } = useRole();
+  const { currentDay } = useDay();
+  const { showError } = useToast();
   
-  // Stati per i dati
   const [pendingShips, setPendingShips] = useState([]);
   const [berths, setBerths] = useState([]);
-  const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [refreshCounter, setRefreshCounter] = useState(0);
 
-  // ✅ Controllo del ruolo: visibile solo se Scheduler
   if (role !== 'Scheduler') {
     return null;
   }
 
-  // Funzione per caricare tutti i dati
+  useEffect(() => {
+    if (refreshTrigger !== undefined) {
+      setRefreshCounter(prev => prev + 1);
+    }
+  }, [refreshTrigger]);
+
   const loadData = async () => {
     setLoading(true);
     setError('');
     
     try {
-      // Carica navi Pending
-      const pendingData = await getShipsByStatus('Pending');
-      setPendingShips(pendingData);
-      
-      // Carica berths
-      const berthsData = await getBerths();
-      setBerths(berthsData);
-      
-      // Carica assegnazioni
-      const assignmentsData = await getAssignments();
-      setAssignments(assignmentsData);
-      
+      // ✅ UNA SOLA CHIAMATA invece di 3!
+      const dashboard = await getSchedulerDashboard();
+      setPendingShips(dashboard.pendingShips);
+      setBerths(dashboard.berths);
     } catch (err) {
-      setError('Errore nel caricamento dei dati: ' + err.message);
-      console.error('Errore loadData:', err);
+      const errorMsg = err.message || 'Errore nel caricamento della dashboard';
+      setError(errorMsg);
+      showError(`❌ ${errorMsg}`);
     } finally {
       setLoading(false);
     }
   };
 
-  // Carica i dati all'apertura e dopo ogni refresh
   useEffect(() => {
     loadData();
   }, [refreshCounter]);
 
-  // Funzione per ricaricare i dati dopo un'assegnazione
   const refreshData = () => {
     setRefreshCounter(prev => prev + 1);
   };
 
   if (loading) {
-    return <div className="scheduler-view__loading">Caricamento dati Scheduler...</div>;
+    return <LoadingSpinner message="Caricamento dati Scheduler..." />;
   }
 
   if (error) {
@@ -69,9 +67,11 @@ const SchedulerView = () => {
   return (
     <div className="scheduler-view">
       <h1>Gestione Assegnazioni Berths</h1>
+      <div className="scheduler-view__day-info">
+        <span>📅 Giorno Corrente: <strong>{currentDay}</strong></span>
+      </div>
       
       <div className="scheduler-view__layout">
-        {/* ✅ Colonna laterale: Lista navi Pending */}
         <div className="scheduler-view__sidebar">
           <PendingShipsList 
             ships={pendingShips} 
@@ -79,11 +79,10 @@ const SchedulerView = () => {
           />
         </div>
         
-        {/* ✅ Tabellone delle 8 berths */}
         <div className="scheduler-view__main">
           <BerthBoard 
             berths={berths}
-            assignments={assignments}
+            assignments={[]}  // ← Le assegnazioni sono già dentro le berths!
             onAssignmentChange={refreshData}
           />
         </div>

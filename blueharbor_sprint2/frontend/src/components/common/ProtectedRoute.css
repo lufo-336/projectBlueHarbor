@@ -1,0 +1,44 @@
+/* frontend/src/components/common/ProtectedRoute.css */
+.protected-route__restricted {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  padding: 32px;
+}
+
+.protected-route__content {
+  text-align: center;
+  padding: 48px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  max-width: 400px;
+}
+
+.protected-route__icon {
+  font-size: 48px;
+  display: block;
+  margin-bottom: 16px;
+}
+
+.protected-route__content h2 {
+  color: #2c3e50;
+  margin-bottom: 8px;
+}
+
+.protected-route__content p {
+  color: #7f8c8d;
+  margin-bottom: 8px;
+}
+
+.protected-route__role {
+  background: #f8f9fa;
+  padding: 8px 16px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.protected-route__role strong {
+  color: #1a2a6c;
+}

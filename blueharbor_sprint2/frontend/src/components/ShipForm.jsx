@@ -1,11 +1,13 @@
-// components/ShipForm.jsx
+// frontend/src/components/ShipForm.jsx
 import React, { useState } from 'react';
 import { createShip } from '../services/api';
+import { useToast } from '../context/ToastContext';  // ← NUOVO
 
 const ShipForm = ({ onShipCreated }) => {
   const [shipName, setShipName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const { showSuccess, showError } = useToast();  // ← NUOVO
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,11 +23,14 @@ const ShipForm = ({ onShipCreated }) => {
     try {
       await createShip(shipName.trim());
       setShipName('');
+      showSuccess(`✅ Nave "${shipName.trim()}" registrata con successo!`);  // ← NUOVO
       if (onShipCreated) {
         onShipCreated();
       }
     } catch (err) {
-      setError('Errore durante la registrazione: ' + err.message);
+      const errorMsg = err.message || 'Errore durante la registrazione';
+      setError(errorMsg);
+      showError(`❌ ${errorMsg}`);  // ← NUOVO
     } finally {
       setLoading(false);
     }
