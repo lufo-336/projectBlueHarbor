@@ -1,6 +1,34 @@
-@BlueHarbor_QPD_WSA.Server_HostAddress = http://localhost:5279
+@host = https://localhost:7008
 
-GET {{BlueHarbor_QPD_WSA.Server_HostAddress}}/weatherforecast/
+### 1. Giorno corrente virtuale
+GET {{host}}/api/system/current-day
 Accept: application/json
 
-###
+### 2. Tutte le navi
+GET {{host}}/api/ships
+Accept: application/json
+
+### 3. Crea una nave (size/arrivo/durata generati dal backend)
+POST {{host}}/api/ships
+Content-Type: application/json
+
+{
+  "name": "Test Vessel"
+}
+
+### 4. Dashboard scheduler (navi Pending + stato banchine)
+GET {{host}}/api/scheduler/dashboard
+Accept: application/json
+
+### 5. Assegna la nave 1 alla banchina 1
+#    (cambia gli id in base a ciò che vedi nella dashboard)
+POST {{host}}/api/ships/1/assign
+Content-Type: application/json
+
+{
+  "berthId": 1
+}
+
+### 6. Next Day (avanza il giorno, rilascia le navi concluse)
+POST {{host}}/api/time/next-day
+Accept: application/json
