@@ -1,3 +1,4 @@
+// frontend/src/components/AuthPage.jsx
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -15,7 +16,7 @@ function BrandLogo({ size = 40 }) {
 }
 
 export default function AuthPage() {
-  const { login, register } = useAuth();
+  const { login, register, loading: authLoading, error: authError } = useAuth();
   const { lang, setLang, t } = useLanguage();
 
   const [view, setView] = useState('login'); // 'login' | 'register' | 'forgot'
@@ -35,27 +36,53 @@ export default function AuthPage() {
 
   const switchView = (v) => { reset(); setView(v); };
 
+  // ✅ LOGIN - usa il contesto con gestione errori
   const handleLogin = async (e) => {
     e.preventDefault();
-    setError(''); setLoading(true);
-    try { await login(email, password); }
-    catch { setError(t('loginError')); }
-    finally { setLoading(false); }
+    setError('');
+    setLoading(true);
+    
+    try {
+      await login(email, password);
+      // ✅ Il login aggiorna AuthContext e RoleContext automaticamente
+    } catch (err) {
+      setError(err.message || t('loginError'));
+    } finally {
+      setLoading(false);
+    }
   };
 
+  // ✅ REGISTER
   const handleRegister = async (e) => {
     e.preventDefault();
-    if (password !== confirm) { setError(t('passwordMismatch')); return; }
-    setError(''); setLoading(true);
-    try { await register(name, email, password, role); }
-    catch { setError(t('registerError')); }
-    finally { setLoading(false); }
+    if (password !== confirm) { 
+      setError(t('passwordMismatch')); 
+      return; 
+    }
+    
+    setError('');
+    setLoading(true);
+    
+    try {
+      await register(name, email, password, role);
+      // ✅ Dopo registrazione, mostra successo e reindirizza al login
+      setSuccess('Registrazione completata! Effettua il login.');
+      setTimeout(() => {
+        switchView('login');
+      }, 2000);
+    } catch (err) {
+      setError(err.message || t('registerError'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleForgot = (e) => {
     e.preventDefault();
     setSuccess(t('resetSent'));
   };
+
+  const isLoading = loading || authLoading;
 
   return (
     <div className="auth-page">
@@ -146,27 +173,58 @@ export default function AuthPage() {
             <form className="auth-form" onSubmit={handleLogin} noValidate>
               <div className="auth-form__field">
                 <label className="auth-form__label">{t('email')}</label>
-                <input className="auth-form__input" type="email" autoComplete="email"
-                  value={email} onChange={e=>setEmail(e.target.value)} required placeholder="name@company.com"/>
+                <input 
+                  className="auth-form__input" 
+                  type="email" 
+                  autoComplete="email"
+                  value={email} 
+                  onChange={e => setEmail(e.target.value)} 
+                  required 
+                  placeholder="name@company.com"
+                />
               </div>
               <div className="auth-form__field">
                 <div className="auth-form__label-row">
                   <label className="auth-form__label">{t('password')}</label>
-                  <button type="button" className="auth-form__link" onClick={() => switchView('forgot')}>{t('forgotPassword')}</button>
+                  <button type="button" className="auth-form__link" onClick={() => switchView('forgot')}>
+                    {t('forgotPassword')}
+                  </button>
                 </div>
                 <div className="auth-form__pw-wrap">
-                  <input className="auth-form__input" type={showPw?'text':'password'} autoComplete="current-password"
-                    value={password} onChange={e=>setPassword(e.target.value)} required placeholder="••••••••"/>
-                  <button type="button" className="auth-form__pw-toggle" onClick={()=>setShowPw(s=>!s)} aria-label="Toggle password">
+                  <input 
+                    className="auth-form__input" 
+                    type={showPw ? 'text' : 'password'} 
+                    autoComplete="current-password"
+                    value={password} 
+                    onChange={e => setPassword(e.target.value)} 
+                    required 
+                    placeholder="••••••••"
+                  />
+                  <button 
+                    type="button" 
+                    className="auth-form__pw-toggle" 
+                    onClick={() => setShowPw(s => !s)} 
+                    aria-label="Toggle password"
+                  >
                     {showPw ? '🙈' : '👁'}
                   </button>
                 </div>
               </div>
-              {error && <p className="auth-form__error">{error}</p>}
-              <button className="auth-btn" type="submit" disabled={loading}>
-                {loading ? t('loggingIn') : t('signIn')}
+              
+              {/* ✅ ERRORE dal backend o dal form */}
+              {(error || authError) && (
+                <p className="auth-form__error">{error || authError}</p>
+              )}
+              
+              <button className="auth-btn" type="submit" disabled={isLoading}>
+                {isLoading ? t('loggingIn') : t('signIn')}
               </button>
-              <p className="auth-form__switch">{t('noAccount')} <button type="button" className="auth-form__link" onClick={()=>switchView('register')}>{t('signUp')}</button></p>
+              <p className="auth-form__switch">
+                {t('noAccount')} 
+                <button type="button" className="auth-form__link" onClick={() => switchView('register')}>
+                  {t('signUp')}
+                </button>
+              </p>
             </form>
           )}
 
@@ -175,17 +233,35 @@ export default function AuthPage() {
             <form className="auth-form" onSubmit={handleRegister} noValidate>
               <div className="auth-form__field">
                 <label className="auth-form__label">{t('fullName')}</label>
-                <input className="auth-form__input" type="text" autoComplete="name"
-                  value={name} onChange={e=>setName(e.target.value)} required placeholder="Marco Rossi"/>
+                <input 
+                  className="auth-form__input" 
+                  type="text" 
+                  autoComplete="name"
+                  value={name} 
+                  onChange={e => setName(e.target.value)} 
+                  required 
+                  placeholder="Marco Rossi"
+                />
               </div>
               <div className="auth-form__field">
                 <label className="auth-form__label">{t('email')}</label>
-                <input className="auth-form__input" type="email" autoComplete="email"
-                  value={email} onChange={e=>setEmail(e.target.value)} required placeholder="name@company.com"/>
+                <input 
+                  className="auth-form__input" 
+                  type="email" 
+                  autoComplete="email"
+                  value={email} 
+                  onChange={e => setEmail(e.target.value)} 
+                  required 
+                  placeholder="name@company.com"
+                />
               </div>
               <div className="auth-form__field">
                 <label className="auth-form__label">{t('role')}</label>
-                <select className="auth-form__input auth-form__select" value={role} onChange={e=>setRole(e.target.value)}>
+                <select 
+                  className="auth-form__input auth-form__select" 
+                  value={role} 
+                  onChange={e => setRole(e.target.value)}
+                >
                   <option value="Operator">{t('operator')}</option>
                   <option value="Scheduler">{t('scheduler')}</option>
                 </select>
@@ -193,21 +269,55 @@ export default function AuthPage() {
               <div className="auth-form__field">
                 <label className="auth-form__label">{t('password')}</label>
                 <div className="auth-form__pw-wrap">
-                  <input className="auth-form__input" type={showPw?'text':'password'} autoComplete="new-password"
-                    value={password} onChange={e=>setPassword(e.target.value)} required placeholder="Min. 6 characters"/>
-                  <button type="button" className="auth-form__pw-toggle" onClick={()=>setShowPw(s=>!s)} aria-label="Toggle password">{showPw?'🙈':'👁'}</button>
+                  <input 
+                    className="auth-form__input" 
+                    type={showPw ? 'text' : 'password'} 
+                    autoComplete="new-password"
+                    value={password} 
+                    onChange={e => setPassword(e.target.value)} 
+                    required 
+                    placeholder="Min. 6 characters"
+                  />
+                  <button 
+                    type="button" 
+                    className="auth-form__pw-toggle" 
+                    onClick={() => setShowPw(s => !s)} 
+                    aria-label="Toggle password"
+                  >
+                    {showPw ? '🙈' : '👁'}
+                  </button>
                 </div>
               </div>
               <div className="auth-form__field">
                 <label className="auth-form__label">{t('confirmPassword')}</label>
-                <input className="auth-form__input" type={showPw?'text':'password'} autoComplete="new-password"
-                  value={confirm} onChange={e=>setConfirm(e.target.value)} required placeholder="••••••••"/>
+                <input 
+                  className="auth-form__input" 
+                  type={showPw ? 'text' : 'password'} 
+                  autoComplete="new-password"
+                  value={confirm} 
+                  onChange={e => setConfirm(e.target.value)} 
+                  required 
+                  placeholder="••••••••"
+                />
               </div>
-              {error && <p className="auth-form__error">{error}</p>}
-              <button className="auth-btn" type="submit" disabled={loading}>
-                {loading ? t('registering') : t('signUp')}
+              
+              {/* ✅ Messaggio di successo per registrazione */}
+              {success && <p className="auth-form__success">{success}</p>}
+              
+              {/* ✅ ERRORE dal backend o dal form */}
+              {(error || authError) && (
+                <p className="auth-form__error">{error || authError}</p>
+              )}
+              
+              <button className="auth-btn" type="submit" disabled={isLoading}>
+                {isLoading ? t('registering') : t('signUp')}
               </button>
-              <p className="auth-form__switch">{t('hasAccount')} <button type="button" className="auth-form__link" onClick={()=>switchView('login')}>{t('signIn')}</button></p>
+              <p className="auth-form__switch">
+                {t('hasAccount')} 
+                <button type="button" className="auth-form__link" onClick={() => switchView('login')}>
+                  {t('signIn')}
+                </button>
+              </p>
             </form>
           )}
 
@@ -220,14 +330,26 @@ export default function AuthPage() {
               </div>
               <div className="auth-form__field">
                 <label className="auth-form__label">{t('email')}</label>
-                <input className="auth-form__input" type="email"
-                  value={email} onChange={e=>setEmail(e.target.value)} required placeholder="name@company.com"/>
+                <input 
+                  className="auth-form__input" 
+                  type="email"
+                  value={email} 
+                  onChange={e => setEmail(e.target.value)} 
+                  required 
+                  placeholder="name@company.com"
+                />
               </div>
               {success && <p className="auth-form__success">{success}</p>}
               {error && <p className="auth-form__error">{error}</p>}
-              {!success && <button className="auth-btn" type="submit">{t('resetPassword')}</button>}
+              {!success && (
+                <button className="auth-btn" type="submit">
+                  {t('resetPassword')}
+                </button>
+              )}
               <p className="auth-form__switch">
-                <button type="button" className="auth-form__link" onClick={()=>switchView('login')}>← {t('backToLogin')}</button>
+                <button type="button" className="auth-form__link" onClick={() => switchView('login')}>
+                  ← {t('backToLogin')}
+                </button>
               </p>
             </form>
           )}

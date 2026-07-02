@@ -1,48 +1,81 @@
-import React, { createContext, useContext, useState } from 'react';
+// frontend/src/context/AuthContext.jsx
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { login as apiLogin, logout as apiLogout, getCurrentUser } from '../services/api';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null); // null = not logged in
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const login = (email, password) => {
-    // Simulated auth — replace with real API call
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        if (email && password.length >= 6) {
-          const u = { email, name: email.split('@')[0], role: 'Operator' };
-          setUser(u);
-          resolve(u);
-        } else {
-          reject(new Error('Invalid credentials'));
+  // ✅ Controlla se c'è una sessione attiva all'avvio
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const userData = await getCurrentUser();
+        if (userData) {
+          setUser(userData);
         }
-      }, 800);
-    });
+      } catch (err) {
+        console.log('Nessuna sessione attiva');
+      } finally {
+        setLoading(false);
+      }
+    };
+    checkSession();
+  }, []);
+
+  // ✅ Login - Riceve ruolo dal backend
+  const login = async (email, password) => {
+    setError(null);
+    try {
+      const response = await apiLogin(email, password);
+      // ✅ Il backend restituisce { user: { email, name, role }, token }
+      setUser(response.user);
+      // Salva il token per le richieste future
+      localStorage.setItem('authToken', response.token);
+      return response;
+    } catch (err) {
+      setError(err.message || 'Login fallito');
+      throw err;
+    }
   };
 
-  const register = (name, email, password, role) => {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        if (name && email && password.length >= 6) {
-          const u = { email, name, role: role || 'Operator' };
-          setUser(u);
-          resolve(u);
-        } else {
-          reject(new Error('Please fill all fields correctly'));
-        }
-      }, 900);
-    });
+  // ✅ Logout
+  const logout = async () => {
+    try {
+      await apiLogout();
+    } catch (err) {
+      console.error('Errore durante il logout:', err);
+    } finally {
+      setUser(null);
+      localStorage.removeItem('authToken');
+      // Reindirizza al login
+      window.location.href = '/';
+    }
   };
 
-  const logout = () => setUser(null);
+  const value = {
+    user,
+    loading,
+    error,
+    login,
+    logout,
+    isAuthenticated: !!user,
+  };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
 }
 
 export function useAuth() {
-  return useContext(AuthContext);
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth deve essere usato all\'interno di AuthProvider');
+  }
+  return context;
 }
