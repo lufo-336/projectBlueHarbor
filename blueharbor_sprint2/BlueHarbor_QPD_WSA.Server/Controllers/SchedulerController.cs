@@ -17,6 +17,9 @@ public class SchedulerController : ControllerBase
         _context = context;
     }
 
+    // ==========================================================================
+    //  GET /api/scheduler/dashboard — vista d'insieme per lo Scheduler
+    // ==========================================================================
     /// <summary>
     /// Vista dello Scheduler: giorno corrente, navi Pending e stato di ogni banchina
     /// (occupata ora? con quali occupazioni in coda?). Sola lettura.

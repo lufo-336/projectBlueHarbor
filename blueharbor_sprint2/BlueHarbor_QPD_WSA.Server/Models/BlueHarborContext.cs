@@ -2,6 +2,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BlueHarbor_QPD_WSA.Server.Models;
 
+/// <summary>
+/// DbContext dell'applicazione: espone le tabelle e configura vincoli,
+/// lunghezze colonne e relazioni (metodo OnModelCreating).
+/// </summary>
 public class BlueHarborContext : DbContext
 {
     public BlueHarborContext(DbContextOptions<BlueHarborContext> options)
@@ -9,6 +13,9 @@ public class BlueHarborContext : DbContext
     {
     }
 
+    // ==========================================================================
+    //  Tabelle (DbSet)
+    // ==========================================================================
     public DbSet<Berth> Berths => Set<Berth>();
 
     public DbSet<Ship> Ships => Set<Ship>();
@@ -17,8 +24,12 @@ public class BlueHarborContext : DbContext
 
     public DbSet<User> Users => Set<User>();
 
+    // ==========================================================================
+    //  Configurazione del modello (vincoli, lunghezze, relazioni)
+    // ==========================================================================
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // ---------- Berths: banchine, size vincolata a XL/L/M/S, nome univoco ----------
         modelBuilder.Entity<Berth>(entity =>
         {
             entity.ToTable("Berths", t =>
@@ -30,6 +41,7 @@ public class BlueHarborContext : DbContext
             entity.Property(e => e.Size).HasMaxLength(2).IsUnicode(false);
         });
 
+        // ---------- Ships: navi, con check su size/stato/arrivo/durata e FK verso Berths ----------
         modelBuilder.Entity<Ship>(entity =>
         {
             entity.ToTable("Ships", t =>
@@ -55,6 +67,7 @@ public class BlueHarborContext : DbContext
                 .HasConstraintName("FK_Ships_Berths");
         });
 
+        // ---------- Settings: tabella chiave-valore (es. CurrentVirtualDay) ----------
         modelBuilder.Entity<Setting>(entity =>
         {
             entity.ToTable("Settings");
@@ -63,6 +76,7 @@ public class BlueHarborContext : DbContext
             entity.Property(e => e.Value).HasMaxLength(50).IsUnicode(false);
         });
 
+        // ---------- Users: utenti applicativi, ruolo vincolato a Scheduler/Operator ----------
         modelBuilder.Entity<User>(entity =>
         {
             entity.ToTable("Users", t =>

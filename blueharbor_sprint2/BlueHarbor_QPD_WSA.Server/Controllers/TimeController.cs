@@ -15,6 +15,9 @@ public class TimeController : ControllerBase
         _timeService = timeService;
     }
 
+    // ==========================================================================
+    //  POST /api/time/next-day — avanza il giorno virtuale (azione "Next Day")
+    // ==========================================================================
     /// <summary>
     /// Azione "Next Day": avanza il giorno virtuale e rilascia le navi che
     /// hanno completato l'occupazione. Restituisce { "currentDay": N }.
