@@ -13,6 +13,7 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi();
 builder.Services.AddScoped<ShipGeneratorService>();
+builder.Services.AddScoped<TimeService>();
 
 var app = builder.Build();
 

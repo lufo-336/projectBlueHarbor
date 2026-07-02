@@ -1,30 +1,16 @@
-// frontend/src/context/RoleContext.jsx
 import React, { createContext, useContext, useState } from 'react';
 
-const RoleContext = createContext();
+const RoleContext = createContext(null);
 
-export const useRole = () => {
-  const context = useContext(RoleContext);
-  if (!context) {
-    throw new Error('useRole deve essere usato all\'interno di RoleProvider');
-  }
-  return context;
-};
-
-export const RoleProvider = ({ children }) => {
-  const [role, setRole] = useState('Scheduler');
-
-  // ✅ ESPONI sia changeRole che setRole per compatibilità
-  const changeRole = (newRole) => {
-    setRole(newRole);
-  };
-
-  // ✅ Lista dei ruoli disponibili
-  const roles = ['Operator', 'Scheduler'];
-
+export function RoleProvider({ children }) {
+  const [role, setRole] = useState('Operator');
   return (
-    <RoleContext.Provider value={{ role, setRole, changeRole, roles }}>
+    <RoleContext.Provider value={{ role, setRole }}>
       {children}
     </RoleContext.Provider>
   );
-};
+}
+
+export function useRole() {
+  return useContext(RoleContext);
+}
