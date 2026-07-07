@@ -30,8 +30,33 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 // --- Servizi di dominio ---
 builder.Services.AddScoped<ShipGeneratorService>();
 builder.Services.AddScoped<TimeService>();
+builder.Services.AddScoped<TokenService>(); // creazione/validazione dei token JWT
 
 var app = builder.Build();
+
+// ==========================================================================
+//  SEED: utenti demo per il login (solo se la tabella Users è vuota)
+//  Credenziali: operator@blueharbor / operator123  —  scheduler@blueharbor / scheduler123
+// ==========================================================================
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<BlueHarborContext>();
+    try
+    {
+        if (!db.Users.Any())
+        {
+            db.Users.AddRange(
+                new User { Username = "operator@blueharbor", PasswordHash = PasswordHasher.Hash("operator123"), Role = "Operator" },
+                new User { Username = "scheduler@blueharbor", PasswordHash = PasswordHasher.Hash("scheduler123"), Role = "Scheduler" });
+            db.SaveChanges();
+        }
+    }
+    catch (Exception ex)
+    {
+        // Se il DB non è raggiungibile all'avvio, non blocco l'app: lo segnalo nei log.
+        app.Logger.LogWarning(ex, "Seed utenti demo non riuscito.");
+    }
+}
 
 // ==========================================================================
 //  2. PIPELINE HTTP (l'ordine dei middleware conta)
