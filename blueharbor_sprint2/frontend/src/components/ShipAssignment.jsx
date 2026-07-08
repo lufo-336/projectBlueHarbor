@@ -1,18 +1,16 @@
 // frontend/src/components/ShipAssignment.jsx
 import React, { useState } from 'react';
-import { assignShip } from '../services/api';  // ← NUOVA API
+import { assignShip } from '../services/api';
 import { useToast } from '../context/ToastContext';
 import './ShipAssignment.css';
 
-const ShipAssignment = ({ ship, onAssigned }) => {
+const ShipAssignment = ({ ship, berths, onAssigned }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [selectedBerth, setSelectedBerth] = useState('');
   const { showSuccess, showError } = useToast();
 
-  // Le berths compatibili vengono dal parent (SchedulerView)
-  // riceviamo la lista delle berths come prop
-  const berths = ship?.compatibleBerths || [];
+  const compatibleBerths = berths || [];
 
   const handleAssign = async () => {
     if (!selectedBerth) {
@@ -24,8 +22,7 @@ const ShipAssignment = ({ ship, onAssigned }) => {
     setError('');
 
     try {
-      // ✅ NUOVO ENDPOINT: POST /api/ships/{id}/assign
-      const result = await assignShip(ship.id, selectedBerth);
+      await assignShip(ship.id, Number(selectedBerth));
       showSuccess(`✅ Nave "${ship.name}" assegnata con successo!`);
       if (onAssigned) {
         onAssigned();
@@ -39,7 +36,38 @@ const ShipAssignment = ({ ship, onAssigned }) => {
     }
   };
 
-  // ... resto del componente
+  return (
+    <div className="ship-assignment">
+      {compatibleBerths.length === 0 ? (
+        <p className="ship-assignment__empty">Nessuna banchina compatibile disponibile</p>
+      ) : (
+        <>
+          <select
+            className="ship-assignment__select"
+            value={selectedBerth}
+            onChange={(e) => setSelectedBerth(e.target.value)}
+            disabled={loading}
+          >
+            <option value="">Seleziona una banchina...</option>
+            {compatibleBerths.map((berth) => (
+              <option key={berth.id} value={berth.id}>
+                {berth.name} ({berth.size}) {berth.isOccupiedNow ? '— occupata ora' : '— libera'}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            className="ship-assignment__button"
+            onClick={handleAssign}
+            disabled={loading || !selectedBerth}
+          >
+            {loading ? 'Assegnazione in corso...' : 'Assegna'}
+          </button>
+        </>
+      )}
+      {error && <div className="ship-assignment__error">{error}</div>}
+    </div>
+  );
 };
 
 export default ShipAssignment;

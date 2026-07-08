@@ -1,4 +1,5 @@
 using BlueHarbor_QPD_WSA.Server.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -6,6 +7,7 @@ namespace BlueHarbor_QPD_WSA.Server.Controllers;
 
 [ApiController]
 [Route("api/time")]
+[Authorize]
 public class TimeController : ControllerBase
 {
     private readonly TimeService _timeService;

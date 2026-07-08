@@ -1,50 +1,88 @@
-import React from 'react';
-import { useLanguage } from '../context/LanguageContext';
+// frontend/src/components/SchedulerView.jsx
+import React, { useState, useEffect } from 'react';
+import { useToast } from '../context/ToastContext';
+import PendingShipsList from './PendingShipsList';
+import BerthBoard from './BerthBoard';
+import LoadingSpinner from './common/LoadingSpinner';
+import { getSchedulerDashboard } from '../services/api';
+import './SchedulerView.css';
 
-const SCHEDULE = [
-  { time: '08:00', route: 'Naples → Genoa', vessel: 'MSC Adriana', status: 'confirmed' },
-  { time: '10:30', route: 'Genoa → Barcelona', vessel: 'MSC Valentina', status: 'pending' },
-  { time: '13:00', route: 'Barcelona → Marseille', vessel: 'MSC Elisa', status: 'confirmed' },
-  { time: '16:45', route: 'Marseille → Valencia', vessel: 'MSC Serena', status: 'delayed' },
-  { time: '19:00', route: 'Valencia → Algeciras', vessel: 'MSC Fiamma', status: 'confirmed' },
-];
+const SchedulerView = ({ refreshTrigger }) => {
+  const { showError } = useToast();
 
-const STATUS_LABELS = { confirmed: 'Confirmed', pending: 'Pending', delayed: 'Delayed' };
+  const [currentDay, setCurrentDay] = useState(null);
+  const [pendingShips, setPendingShips] = useState([]);
+  const [berths, setBerths] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [refreshCounter, setRefreshCounter] = useState(0);
 
-export default function SchedulerView({ refreshTrigger }) {
-  const { t } = useLanguage();
+  useEffect(() => {
+    if (refreshTrigger !== undefined) {
+      setRefreshCounter(prev => prev + 1);
+    }
+  }, [refreshTrigger]);
+
+  const loadData = async () => {
+    setLoading(true);
+    setError('');
+
+    try {
+      // Una sola chiamata: giorno corrente + navi pending + stato banchine.
+      const dashboard = await getSchedulerDashboard();
+      setCurrentDay(dashboard.currentDay);
+      setPendingShips(dashboard.pendingShips);
+      setBerths(dashboard.berths);
+    } catch (err) {
+      const errorMsg = err.message || 'Errore nel caricamento della dashboard';
+      setError(errorMsg);
+      showError(`❌ ${errorMsg}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, [refreshCounter]);
+
+  const refreshData = () => {
+    setRefreshCounter(prev => prev + 1);
+  };
+
+  if (loading) {
+    return <LoadingSpinner message="Caricamento dati Scheduler..." />;
+  }
+
+  if (error) {
+    return <div className="scheduler-view__error">{error}</div>;
+  }
+
   return (
-    <section className="dashboard">
-      <div className="dashboard__header">
-        <h1 className="dashboard__title">{t('schedulerTitle')}</h1>
-        <p className="dashboard__subtitle">{t('schedulerWelcome')}</p>
+    <div className="scheduler-view">
+      <h1>Gestione Assegnazioni Berths</h1>
+      <div className="scheduler-view__day-info">
+        <span>📅 Giorno Corrente: <strong>{currentDay}</strong></span>
       </div>
-      <div className="schedule-table-wrap">
-        <table className="schedule-table">
-          <thead>
-            <tr>
-              <th>Time</th>
-              <th>Route</th>
-              <th>Vessel</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {SCHEDULE.map((row, i) => (
-              <tr key={i}>
-                <td className="schedule-table__time">{row.time}</td>
-                <td>{row.route}</td>
-                <td className="schedule-table__vessel">{row.vessel}</td>
-                <td>
-                  <span className={`status-badge status-badge--${row.status}`}>
-                    {STATUS_LABELS[row.status]}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+
+      <div className="scheduler-view__layout">
+        <div className="scheduler-view__sidebar">
+          <PendingShipsList
+            ships={pendingShips}
+            berths={berths}
+            onShipAssigned={refreshData}
+          />
+        </div>
+
+        <div className="scheduler-view__main">
+          <BerthBoard
+            berths={berths}
+            onAssignmentChange={refreshData}
+          />
+        </div>
       </div>
-    </section>
+    </div>
   );
-}
+};
+
+export default SchedulerView;

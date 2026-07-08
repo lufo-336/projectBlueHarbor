@@ -6,26 +6,16 @@ const RoleContext = createContext(null);
 
 export function RoleProvider({ children }) {
   const { user } = useAuth();
-  const [role, setRole] = useState('Operator');
+  const [role, setRole] = useState(null);
 
-  // ✅ Il ruolo viene impostato DALL'UTENTE AUTENTICATO
+  // Il ruolo è deciso esclusivamente dal server, tramite l'utente autenticato:
+  // non esiste (più) un modo per cambiarlo lato client.
   useEffect(() => {
-    if (user && user.role) {
-      setRole(user.role);
-    } else {
-      // Se non c'è utente, ruolo di default (non dovrebbe succedere)
-      setRole('Operator');
-    }
+    setRole(user?.role ?? null);
   }, [user]);
 
-  // ✅ Cambio ruolo solo se autorizzato (es. admin)
-  const changeRole = (newRole) => {
-    // Qui potresti controllare se l'utente ha i permessi per cambiare ruolo
-    setRole(newRole);
-  };
-
   return (
-    <RoleContext.Provider value={{ role, setRole: changeRole }}>
+    <RoleContext.Provider value={{ role }}>
       {children}
     </RoleContext.Provider>
   );

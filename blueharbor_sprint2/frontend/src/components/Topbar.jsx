@@ -3,6 +3,8 @@ import { useRole } from '../context/RoleContext';
 import { useDay } from '../context/DayContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
+import { nextDay } from '../services/api';
 
 const LANG_LABELS = { en: 'EN', it: 'IT', es: 'ES' };
 
@@ -17,14 +19,27 @@ function BrandLogo() {
 }
 
 export default function Topbar({ onDayChange }) {
-  const { role, setRole } = useRole();
-  const { day, setDay } = useDay();
+  const { role } = useRole();
+  const { currentDay, refresh } = useDay();
   const { lang, setLang, t } = useLanguage();
   const { user, logout } = useAuth();
+  const { showError } = useToast();
   const [langOpen, setLangOpen] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
+  const [advancing, setAdvancing] = useState(false);
 
-  const handleDayChange = (e) => { setDay(e.target.value); onDayChange?.(); };
+  const handleNextDay = async () => {
+    setAdvancing(true);
+    try {
+      await nextDay();
+      await refresh();
+      onDayChange?.();
+    } catch (err) {
+      showError?.(`❌ ${err.message || "Errore nell'avanzamento del giorno"}`);
+    } finally {
+      setAdvancing(false);
+    }
+  };
 
   return (
     <header className="topbar">
@@ -36,19 +51,23 @@ export default function Topbar({ onDayChange }) {
 
       <nav className="topbar__controls">
         {/* Day */}
-        <label className="topbar__control">
+        <div className="topbar__control">
           <span className="topbar__label">{t('day')}</span>
-          <input type="date" className="topbar__input" value={day} onChange={handleDayChange}/>
-        </label>
+          <strong className="topbar__input" style={{ display: 'inline-flex', alignItems: 'center' }}>
+            {currentDay ?? '—'}
+          </strong>
+          <button className="topbar__lang-btn" onClick={handleNextDay} disabled={advancing}>
+            {advancing ? '…' : 'Next Day'}
+          </button>
+        </div>
 
-        {/* Role */}
-        <label className="topbar__control">
+        {/* Role (sola lettura: deciso dal server in base all'utente autenticato) */}
+        <div className="topbar__control">
           <span className="topbar__label">{t('role')}</span>
-          <select className="topbar__select" value={role} onChange={e => setRole(e.target.value)}>
-            <option value="Operator">{t('operator')}</option>
-            <option value="Scheduler">{t('scheduler')}</option>
-          </select>
-        </label>
+          <span className="topbar__select" style={{ display: 'inline-flex', alignItems: 'center', cursor: 'default' }}>
+            {role === 'Operator' ? t('operator') : role === 'Scheduler' ? t('scheduler') : role}
+          </span>
+        </div>
 
         {/* Language */}
         <div className="topbar__lang">

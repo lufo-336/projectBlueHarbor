@@ -1,5 +1,6 @@
 using BlueHarbor_QPD_WSA.Server.DTOs;
 using BlueHarbor_QPD_WSA.Server.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -8,6 +9,7 @@ namespace BlueHarbor_QPD_WSA.Server.Controllers;
 
 [ApiController]
 [Route("api/scheduler")]
+[Authorize(Roles = "Scheduler")]
 public class SchedulerController : ControllerBase
 {
     private readonly BlueHarborContext _context;

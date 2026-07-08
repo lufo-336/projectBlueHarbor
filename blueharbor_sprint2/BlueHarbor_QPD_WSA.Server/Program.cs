@@ -1,7 +1,10 @@
+using System.Text;
 using BlueHarbor_QPD_WSA.Server.Infrastructure;
 using BlueHarbor_QPD_WSA.Server.Models;
 using BlueHarbor_QPD_WSA.Server.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -31,6 +34,26 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddScoped<ShipGeneratorService>();
 builder.Services.AddScoped<TimeService>();
 builder.Services.AddScoped<TokenService>(); // creazione/validazione dei token JWT
+
+// --- Autenticazione JWT: collega il token emesso da AuthController/TokenService
+//     alla pipeline HTTP, così [Authorize] sui controller viene davvero applicato. ---
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidateAudience = true,
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)),
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero
+        };
+    });
+builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
@@ -80,6 +103,7 @@ else
 }
 
 app.UseHttpsRedirection();
+app.UseAuthentication();
 app.UseAuthorization();
 
 // --- Rotte dei controller (/api/...) ---

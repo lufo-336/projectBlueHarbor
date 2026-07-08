@@ -1,6 +1,7 @@
 using BlueHarbor_QPD_WSA.Server.DTOs;
 using BlueHarbor_QPD_WSA.Server.Models;
 using BlueHarbor_QPD_WSA.Server.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,6 +14,7 @@ namespace BlueHarbor_QPD_WSA.Server.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/ships")]
+[Authorize]
 public class ShipsController : ControllerBase
 {
     // ==========================================================================
@@ -31,6 +33,7 @@ public class ShipsController : ControllerBase
     //  GET /api/ships — elenco di tutte le navi (ordinate per Id)
     // ==========================================================================
     [HttpGet]
+    [Authorize(Roles = "Operator")]
     public async Task<IActionResult> GetShips()
     {
         var ships = await _context.Ships
@@ -45,6 +48,7 @@ public class ShipsController : ControllerBase
     //  size, giorno di arrivo e durata sono generati dal backend; la nave nasce Pending.
     // ==========================================================================
     [HttpPost]
+    [Authorize(Roles = "Operator")]
     public async Task<IActionResult> CreateShip([FromBody] CreateShipRequest request)
     {
         // --- Validazione input: il nome è l'unico dato inserito dall'utente ---
@@ -85,6 +89,7 @@ public class ShipsController : ControllerBase
     /// della banchina (algoritmo di accodamento). La nave passa a Assigned.
     /// </summary>
     [HttpPost("{id:int}/assign")]
+    [Authorize(Roles = "Scheduler")]
     public async Task<IActionResult> AssignShip(int id, [FromBody] AssignShipRequest request)
     {
         // --- 1) La nave esiste? ---

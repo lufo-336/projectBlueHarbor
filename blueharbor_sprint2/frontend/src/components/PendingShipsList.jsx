@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import ShipAssignment from './ShipAssignment';
 import './PendingShipsList.css';
 
-const PendingShipsList = ({ ships, onShipAssigned }) => {
+const PendingShipsList = ({ ships, berths, onShipAssigned }) => {
   const [selectedShip, setSelectedShip] = useState(null);
 
   if (!ships || ships.length === 0) {
@@ -48,8 +48,9 @@ const PendingShipsList = ({ ships, onShipAssigned }) => {
             
             {selectedShip?.id === ship.id && (
               <div className="pending-ships-list__assignment">
-                <ShipAssignment 
+                <ShipAssignment
                   ship={ship}
+                  berths={(berths || []).filter(b => b.size === ship.size)}
                   onAssigned={() => {
                     setSelectedShip(null);
                     onShipAssigned();
