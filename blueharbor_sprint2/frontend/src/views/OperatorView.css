@@ -1,0 +1,21 @@
+.operator { display: flex; flex-direction: column; gap: 1.25rem; }
+
+.operator__counters { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; }
+@media (max-width: 700px) { .operator__counters { grid-template-columns: 1fr; } }
+.counter { display: flex; flex-direction: column; gap: 0.2rem; color: var(--text-muted); }
+.counter__value { font-size: 2rem; font-weight: 700; color: var(--text); }
+
+.operator__hint { color: var(--text-muted); font-size: 0.9rem; }
+
+.operator__form { display: flex; gap: 0.75rem; align-items: end; flex-wrap: wrap; }
+.operator__form .field { flex: 1; min-width: 220px; }
+
+.operator__table-wrap { overflow-x: auto; }
+.operator__table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+.operator__table th, .operator__table td {
+  text-align: left; padding: 0.55rem 0.75rem; border-bottom: 1px solid var(--border);
+}
+.operator__table th {
+  color: var(--text-muted); font-size: 0.8rem;
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
