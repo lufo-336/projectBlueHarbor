@@ -11,6 +11,7 @@ documentazione/
 # Su GitHub va solo blueharbor_sprint2 (la versione principale).
 blueharbor_sprint1/
 blueharbor_claude/
+blueharbor_completo/
 *.zip
 
 # ==========================================================================
