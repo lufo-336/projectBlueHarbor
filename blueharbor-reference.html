@@ -463,7 +463,8 @@
       <div class="cover__meta">
         <span><strong>Repo</strong> lufo-336/projectBlueHarbor</span>
         <span><strong>Stack</strong> React + Vite · ASP.NET Core · SQL Server</span>
-        <span><strong>Aggiornato</strong> 7 luglio 2026</span>
+        <span><strong>Redatto</strong> 7 luglio 2026</span>
+        <span><strong>Rivisto</strong> 15 luglio 2026 — allineato al codice dopo l'overhaul</span>
       </div>
     </div>
 
@@ -502,8 +503,8 @@
         </div>
         <div class="statuscard">
           <div class="statuscard__label">Sicurezza login</div>
-          <div class="statuscard__value"><span class="chip chip--warn">Parziale</span></div>
-          <div class="statuscard__note">JWT ok, ma nessun endpoint protetto per ruolo</div>
+          <div class="statuscard__value"><span class="chip chip--good">Attiva</span></div>
+          <div class="statuscard__note">JWT + endpoint protetti per ruolo (401/403). Hashing SHA-256 senza salt (didattico)</div>
         </div>
         <div class="statuscard">
           <div class="statuscard__label">Sprint completati</div>
@@ -660,27 +661,29 @@
       <div class="section-head"><span class="section-num">07</span><h2>Riferimento API</h2></div>
       <div class="tablewrap">
         <table>
-          <thead><tr><th>Metodo</th><th>Percorso</th><th>Ruolo pensato</th><th>Cosa fa</th></tr></thead>
+          <thead><tr><th>Metodo</th><th>Percorso</th><th>Ruolo richiesto</th><th>Cosa fa</th></tr></thead>
           <tbody>
-            <tr><td><code>POST</code></td><td><code>/api/auth/login</code></td><td>—</td><td>Verifica credenziali, rilascia JWT (scade dopo 8h)</td></tr>
-            <tr><td><code>GET</code></td><td><code>/api/auth/me</code></td><td>—</td><td>Verifica la sessione all'avvio dell'app</td></tr>
-            <tr><td><code>POST</code></td><td><code>/api/auth/logout</code></td><td>—</td><td>Simbolico: col JWT stateless, il client scarta solo il token</td></tr>
-            <tr><td><code>GET</code></td><td><code>/api/system/current-day</code></td><td>—</td><td>Giorno virtuale corrente</td></tr>
-            <tr><td><code>GET</code></td><td><code>/api/ships</code></td><td>—</td><td>Elenco navi, ordinate per Id</td></tr>
+            <tr><td><code>POST</code></td><td><code>/api/auth/login</code></td><td>pubblico</td><td>Verifica credenziali, rilascia JWT (scade dopo 8h)</td></tr>
+            <tr><td><code>GET</code></td><td><code>/api/auth/me</code></td><td>pubblico</td><td>Verifica la sessione all'avvio dell'app</td></tr>
+            <tr><td><code>POST</code></td><td><code>/api/auth/logout</code></td><td>pubblico</td><td>Simbolico: col JWT stateless, il client scarta solo il token</td></tr>
+            <tr><td><code>GET</code></td><td><code>/api/system/current-day</code></td><td>autenticato</td><td>Giorno virtuale corrente</td></tr>
+            <tr><td><code>GET</code></td><td><code>/api/ships</code></td><td>Operatore</td><td>Elenco navi, ordinate per Id</td></tr>
             <tr><td><code>POST</code></td><td><code>/api/ships</code></td><td>Operatore</td><td>Crea nave: solo il nome è manuale, il resto è generato</td></tr>
             <tr><td><code>GET</code></td><td><code>/api/scheduler/dashboard</code></td><td>Scheduler</td><td>Navi Pending + stato di tutte le banchine in un'unica risposta</td></tr>
             <tr><td><code>POST</code></td><td><code>/api/ships/{id}/assign</code></td><td>Scheduler</td><td>Assegna a una banchina: valida size, calcola il primo slot libero</td></tr>
-            <tr><td><code>POST</code></td><td><code>/api/time/next-day</code></td><td>—</td><td>Avanza il giorno virtuale, rilascia le navi concluse</td></tr>
+            <tr><td><code>POST</code></td><td><code>/api/time/next-day</code></td><td>autenticato</td><td>Avanza il giorno virtuale, rilascia le navi concluse</td></tr>
           </tbody>
         </table>
       </div>
-      <div class="callout callout--warn">
-        <div class="callout__label">Da sapere prima che lo chieda lo sponsor</div>
+      <div class="callout">
+        <div class="callout__label">Sicurezza degli endpoint</div>
         <p>
-          Nessuno di questi endpoint verifica oggi il ruolo lato server: rispondono 200 anche
-          senza login. La separazione Operatore/Scheduler è reale nell'interfaccia, non è
-          ancora sicurezza. È un lavoro noto e pianificato (vedi <a href="#rischi">Rischi noti</a>),
-          non qualcosa che si è rotto stasera.
+          Ogni controller applicativo è annotato <code>[Authorize]</code>: senza un token JWT
+          valido gli endpoint rispondono <strong>401</strong> (verificato il 15 luglio:
+          <code>GET /api/ships</code>, <code>/api/scheduler/dashboard</code> e
+          <code>/api/system/current-day</code> → 401 senza login), e con il ruolo sbagliato
+          <strong>403</strong>. Pubblico resta solo <code>/api/auth/*</code>. L'unica
+          semplificazione dichiaratamente didattica è l'hashing SHA-256 senza salt.
         </p>
       </div>
     </section>
@@ -729,15 +732,15 @@
           </tbody>
         </table>
       </div>
-      <p>Il cuore dell'applicazione (Sprint 1–5) è completo e funziona end-to-end — l'ho verificato stasera girando l'app dal vivo, non solo leggendo il codice. Sprint 6 è a metà: il login funziona, manca la protezione degli endpoint. Dallo Sprint 7 in poi il lavoro non è iniziato.</p>
+      <p>Il cuore dell'applicazione (Sprint 1–5) è completo e funziona end-to-end — verificato girando l'app dal vivo, non solo leggendo il codice. Sprint 6 è quasi completo: login e <strong>protezione degli endpoint per ruolo</strong> (401/403) funzionano; resta la semplificazione dell'hashing SHA-256 senza salt e il seed utenti lato DB. Dallo Sprint 7 in poi il lavoro non è iniziato.</p>
     </section>
 
     <section id="rischi">
       <div class="section-head"><span class="section-num">10</span><h2>Rischi noti</h2></div>
       <p>Cose che è meglio nominare tu prima che le trovi lo sponsor.</p>
-      <div class="callout callout--warn">
-        <div class="callout__label">Autenticazione incompleta</div>
-        <p>Login JWT reale, ma nessun endpoint richiede il token: <code>/api/ships</code>, <code>/assign</code>, <code>/next-day</code> rispondono a chiunque. Hashing password SHA-256 senza salt (dichiaratamente una semplificazione didattica).</p>
+      <div class="callout">
+        <div class="callout__label">Hashing password semplificato</div>
+        <p>Gli endpoint applicativi sono protetti (<code>[Authorize]</code> per ruolo, 401/403 verificati il 15 luglio). Resta didattica la scelta di hashing password <strong>SHA-256 senza salt</strong>: in uno scenario reale si userebbe bcrypt/PBKDF2. Nota: l'autenticazione non è comunque un requisito della consegna.</p>
       </div>
       <div class="callout callout--warn">
         <div class="callout__label">Nessun test automatico</div>
@@ -788,9 +791,10 @@
 
       <h3>Avvio (se i server non sono già attivi)</h3>
       <pre><code>cd blueharbor_sprint2/BlueHarbor_QPD_WSA.Server
-dotnet run --urls http://localhost:5279
+dotnet run --launch-profile https   # API su https://localhost:7008
 
 cd blueharbor_sprint2/frontend
+npm install   # solo la prima volta
 npm run dev   # http://localhost:5173</code></pre>
 
       <h3>Percorso consigliato</h3>
@@ -803,20 +807,22 @@ npm run dev   # http://localhost:5173</code></pre>
         <li><strong>Se hai tempo</strong>, apri <code>/scalar/v1</code> sul backend per mostrare tutte le API documentate e testabili da browser.</li>
       </ol>
 
-      <div class="callout callout--bad">
+      <div class="callout callout--warn">
         <div class="callout__label">Prima di iniziare</div>
         <p>
-          Il database ha oggi 31 navi e giorno virtuale 128 (dati di sviluppo accumulati). Se
-          vuoi una demo pulita da un giorno 1 con poche navi, è il momento di far girare lo
-          script di reset del database <em>prima</em> di collegarti — non a metà presentazione.
+          Il database di sviluppo accumula navi di test e un giorno virtuale sempre più alto man
+          mano che si prova l'app. Se vuoi una demo pulita da un giorno 1 con poche navi, fai
+          girare lo script di reset del database <em>prima</em> di collegarti — non a metà
+          presentazione.
         </p>
       </div>
     </section>
 
     <footer>
       Documento generato da Claude a partire dal codice di <code>blueharbor_sprint2</code>,
-      dalla cronologia git e dalla documentazione locale in <code>documentazione/</code>.
-      Verificato eseguendo l'applicazione dal vivo il 7 luglio 2026.
+      dalla cronologia git e dalla documentazione locale. Verificato eseguendo l'applicazione
+      dal vivo il 7 luglio 2026; rivisto il 15 luglio 2026 per allinearlo al codice dopo
+      l'overhaul del team — endpoint ora protetti per ruolo e comando di avvio corretto.
     </footer>
   </main>
 </div>
