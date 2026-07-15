@@ -1,0 +1,36 @@
+/* ═══ SPRINT 1 (accessibilità SPRINT 10) ═══
+   Token di design: palette con contrasto AA (4.5:1) già verificato.
+   Blu scuro #0b3d59 su bianco = 9.9:1. */
+:root {
+  --color-primary: #0b3d59;
+  --color-primary-dark: #08263a;
+  --color-text: #1a1a1a;
+  --color-bg: #f4f6f8;
+  --color-surface: #ffffff;
+  --color-border: #b9c6d0;
+  --color-error: #a4262c;      /* 6.3:1 su bianco */
+  --color-success: #0b5d1e;    /* 6.9:1 su bianco */
+  /* Badge di stato: testo scuro su fondo chiaro, MAI solo colore
+     (lo stato è sempre scritto per esteso). */
+  --status-pending-bg: #fff4cc;  --status-pending-fg: #6a5100;
+  --status-assigned-bg: #d9f2e0; --status-assigned-fg: #0b5d1e;
+  --status-departed-bg: #e8e8e8; --status-departed-fg: #444444;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+/* Focus visibile ovunque: navigazione da tastiera (Sprint 10). */
+:focus-visible { outline: 3px solid var(--color-primary); outline-offset: 2px; }
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; opacity: 0.6; }
+
+/* ═══ SPRINT 3 (Task 12) ═══ Contenuto solo per screen reader: usata dalle
+   label associate ai <select> compatti che non hanno testo visibile. */
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; margin: -1px;
+  padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}

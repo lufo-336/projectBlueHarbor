@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>BlueHarbor.Api</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- ADO.NET per SQL Server: l'UNICA libreria di accesso dati (niente EF Core). -->
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.2" />
+    <!-- Swagger UI per l'autodocumentazione delle API (Sprint 5). -->
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="7.2.0" />
+  </ItemGroup>
+</Project>

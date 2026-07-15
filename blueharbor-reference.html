@@ -1,0 +1,824 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+<style>
+  :root {
+    --ink: #101B2D;
+    --ink-soft: #2A3B52;
+    --surface: #EEF1F4;
+    --surface-raised: #FFFFFF;
+    --surface-sunken: #E2E7EC;
+    --line: #D3DAE1;
+    --steel: #3C6E71;
+    --steel-ink: #24504F;
+    --bronze: #96773A;
+    --bronze-soft: #EFE6D3;
+    --good: #2E7D5B;
+    --good-bg: #E3F0E8;
+    --warn: #B8811E;
+    --warn-bg: #F6EAD2;
+    --bad: #B23A32;
+    --bad-bg: #F6E1DE;
+    --muted: #5B6B7C;
+
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+
+    --radius: 6px;
+    --shadow: 0 1px 2px rgba(16,27,45,0.06), 0 6px 20px rgba(16,27,45,0.06);
+  }
+
+  :root[data-theme="dark"] {
+    --ink: #E7ECF2;
+    --ink-soft: #B9C4D1;
+    --surface: #0B141F;
+    --surface-raised: #131F2E;
+    --surface-sunken: #0A1119;
+    --line: #223244;
+    --steel: #5FA3A0;
+    --steel-ink: #8FC4C1;
+    --bronze: #D0A85C;
+    --bronze-soft: #2C2413;
+    --good: #6FCB9E;
+    --good-bg: #14281F;
+    --warn: #E3B15C;
+    --warn-bg: #2E2412;
+    --bad: #E4867D;
+    --bad-bg: #2E1917;
+    --muted: #93A2B3;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 6px 24px rgba(0,0,0,0.35);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink: #E7ECF2;
+      --ink-soft: #B9C4D1;
+      --surface: #0B141F;
+      --surface-raised: #131F2E;
+      --surface-sunken: #0A1119;
+      --line: #223244;
+      --steel: #5FA3A0;
+      --steel-ink: #8FC4C1;
+      --bronze: #D0A85C;
+      --bronze-soft: #2C2413;
+      --good: #6FCB9E;
+      --good-bg: #14281F;
+      --warn: #E3B15C;
+      --warn-bg: #2E2412;
+      --bad: #E4867D;
+      --bad-bg: #2E1917;
+      --muted: #93A2B3;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 6px 24px rgba(0,0,0,0.35);
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--surface);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: var(--steel-ink); }
+
+  .shell {
+    display: grid;
+    grid-template-columns: 232px minmax(0, 1fr);
+    max-width: 1180px;
+    margin: 0 auto;
+  }
+
+  @media (max-width: 900px) {
+    .shell { grid-template-columns: 1fr; }
+  }
+
+  /* Sidebar / TOC */
+  .toc {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 2rem 1.25rem 2rem 1.5rem;
+    border-right: 1px solid var(--line);
+  }
+
+  @media (max-width: 900px) {
+    .toc {
+      position: static;
+      height: auto;
+      border-right: none;
+      border-bottom: 1px solid var(--line);
+      padding: 1rem 1.25rem;
+    }
+    .toc ol { display: flex; flex-wrap: wrap; gap: 0.4rem 0.9rem; }
+    .toc li { break-inside: avoid; }
+  }
+
+  .toc__brand {
+    font-family: var(--serif);
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    margin: 0 0 0.15rem;
+  }
+
+  .toc__sub {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin: 0 0 1.5rem;
+  }
+
+  .toc ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    counter-reset: toc;
+  }
+
+  .toc li { counter-increment: toc; }
+
+  .toc a {
+    display: block;
+    font-size: 0.8125rem;
+    color: var(--ink-soft);
+    text-decoration: none;
+    padding: 0.3rem 0;
+    border-left: 2px solid transparent;
+    padding-left: 0.7rem;
+    margin-left: -0.7rem;
+    transition: border-color 0.15s, color 0.15s;
+  }
+
+  .toc a:hover, .toc a:focus-visible { color: var(--steel-ink); border-color: var(--line); }
+
+  .toc a::before {
+    content: counter(toc, decimal-leading-zero) "  ";
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    color: var(--muted);
+  }
+
+  /* Main content */
+  main { padding: 2.5rem clamp(1.25rem, 4vw, 3.5rem) 6rem; min-width: 0; }
+
+  .cover {
+    margin-bottom: 3rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .cover__eyebrow {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--steel-ink);
+    margin: 0 0 0.75rem;
+  }
+
+  .cover h1 {
+    font-family: var(--serif);
+    font-size: clamp(1.9rem, 4vw, 2.6rem);
+    font-weight: 600;
+    line-height: 1.12;
+    margin: 0 0 0.6rem;
+    text-wrap: balance;
+    color: var(--ink);
+  }
+
+  .cover__lede {
+    font-size: 1.0625rem;
+    color: var(--ink-soft);
+    max-width: 62ch;
+    margin: 0 0 1.5rem;
+  }
+
+  .cover__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
+    font-size: 0.8125rem;
+    color: var(--muted);
+  }
+
+  .cover__meta strong { color: var(--ink-soft); font-weight: 600; }
+
+  section { margin-bottom: 3.25rem; scroll-margin-top: 1.5rem; }
+
+  .section-head { display: flex; align-items: baseline; gap: 0.75rem; margin-bottom: 1.25rem; }
+
+  .section-num {
+    font-family: var(--mono);
+    font-size: 0.8125rem;
+    color: var(--bronze);
+    font-weight: 600;
+  }
+
+  h2 {
+    font-family: var(--serif);
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--ink);
+    text-wrap: balance;
+  }
+
+  h3 {
+    font-family: var(--serif);
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin: 1.75rem 0 0.75rem;
+    color: var(--ink);
+  }
+
+  p { margin: 0 0 1rem; max-width: 68ch; color: var(--ink-soft); }
+  section > p:first-of-type { margin-top: 0; }
+
+  ul.plain, ol.plain { margin: 0 0 1rem; padding-left: 1.25rem; color: var(--ink-soft); max-width: 68ch; }
+  ul.plain li, ol.plain li { margin-bottom: 0.4rem; }
+
+  code {
+    font-family: var(--mono);
+    font-size: 0.875em;
+    background: var(--surface-sunken);
+    padding: 0.1em 0.4em;
+    border-radius: 4px;
+  }
+
+  pre {
+    font-family: var(--mono);
+    font-size: 0.8125rem;
+    background: var(--surface-sunken);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+    overflow-x: auto;
+    line-height: 1.55;
+    color: var(--ink-soft);
+  }
+  pre code { background: none; padding: 0; }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .chip::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .chip--good { background: var(--good-bg); color: var(--good); }
+  .chip--warn { background: var(--warn-bg); color: var(--warn); }
+  .chip--bad  { background: var(--bad-bg);  color: var(--bad); }
+  .chip--info { background: var(--surface-sunken); color: var(--muted); }
+
+  .statusgrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 1.75rem;
+  }
+  .statuscard {
+    background: var(--surface-raised);
+    padding: 1.1rem 1.25rem;
+  }
+  .statuscard__label {
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin-bottom: 0.4rem;
+  }
+  .statuscard__value {
+    font-family: var(--serif);
+    font-size: 1.375rem;
+    font-weight: 600;
+  }
+  .statuscard__note { font-size: 0.75rem; color: var(--muted); margin-top: 0.25rem; }
+
+  .arch {
+    display: flex;
+    align-items: stretch;
+    gap: 0.5rem;
+    margin: 1.5rem 0;
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+  }
+  .arch__box {
+    flex: 1 1 0;
+    min-width: 190px;
+    background: var(--surface-raised);
+    border: 1px solid var(--line);
+    border-top: 3px solid var(--steel);
+    border-radius: var(--radius);
+    padding: 1.1rem 1.15rem;
+    box-shadow: var(--shadow);
+  }
+  .arch__box h4 {
+    font-family: var(--serif);
+    font-size: 1rem;
+    margin: 0 0 0.35rem;
+  }
+  .arch__box p { font-size: 0.8125rem; margin: 0; color: var(--muted); max-width: none; }
+  .arch__box .tag { font-family: var(--mono); font-size: 0.6875rem; color: var(--bronze); display: block; margin-bottom: 0.5rem; }
+  .arch__arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-size: 1.1rem;
+    flex: 0 0 auto;
+    padding: 0 0.15rem;
+  }
+
+  .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: 1.5rem; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.85rem; min-width: 480px; }
+  thead th {
+    text-align: left;
+    background: var(--surface-sunken);
+    color: var(--muted);
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.6rem 0.9rem;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  td {
+    padding: 0.6rem 0.9rem;
+    border-bottom: 1px solid var(--line);
+    color: var(--ink-soft);
+    vertical-align: top;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--surface-raised); }
+  td code { white-space: nowrap; }
+  .num { font-variant-numeric: tabular-nums; font-family: var(--mono); }
+
+  .callout {
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--steel);
+    background: var(--surface-raised);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    padding: 1rem 1.25rem;
+    margin: 0 0 1.5rem;
+    font-size: 0.9rem;
+  }
+  .callout p:last-child { margin-bottom: 0; }
+  .callout--warn { border-left-color: var(--warn); }
+  .callout--bad { border-left-color: var(--bad); }
+  .callout__label { font-weight: 700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 0.35rem; }
+
+  .timeline { font-family: var(--mono); font-size: 0.75rem; overflow-x: auto; }
+  .timeline table { min-width: 620px; }
+  .timeline td, .timeline th { text-align: center; padding: 0.35rem 0.5rem; }
+  .tl-bar { display: inline-block; height: 18px; border-radius: 3px; }
+
+  .steps { counter-reset: step; list-style: none; margin: 0; padding: 0; max-width: 68ch; }
+  .steps li {
+    counter-increment: step;
+    position: relative;
+    padding: 0 0 1.1rem 2.4rem;
+    border-left: 1px solid var(--line);
+    margin-left: 0.7rem;
+  }
+  .steps li:last-child { border-left-color: transparent; padding-bottom: 0; }
+  .steps li::before {
+    content: counter(step);
+    position: absolute;
+    left: -0.7rem;
+    top: 0;
+    width: 1.4rem;
+    height: 1.4rem;
+    border-radius: 50%;
+    background: var(--steel);
+    color: var(--surface-raised);
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .steps strong { color: var(--ink); }
+  .steps .fine { display: block; font-size: 0.8rem; color: var(--muted); margin-top: 0.2rem; }
+
+  .creds { display: flex; gap: 1rem; flex-wrap: wrap; margin: 1rem 0 1.5rem; }
+  .creds__card { background: var(--surface-raised); border: 1px solid var(--line); border-radius: var(--radius); padding: 0.9rem 1.1rem; min-width: 220px; }
+  .creds__role { font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--bronze); margin-bottom: 0.35rem; }
+  .creds__card code { display: block; margin-top: 0.15rem; }
+
+  footer {
+    border-top: 1px solid var(--line);
+    padding-top: 1.5rem;
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+
+<div class="shell">
+  <nav class="toc" aria-label="Indice">
+    <p class="toc__brand">BlueHarbor Terminal</p>
+    <p class="toc__sub">Documento di riferimento — blueharbor_sprint2</p>
+    <ol>
+      <li><a href="#sommario">Sommario esecutivo</a></li>
+      <li><a href="#stato">Stato attuale</a></li>
+      <li><a href="#stasera">Riparato stasera</a></li>
+      <li><a href="#architettura">Architettura</a></li>
+      <li><a href="#dati">Modello dati</a></li>
+      <li><a href="#dominio">Regole di dominio</a></li>
+      <li><a href="#api">Riferimento API</a></li>
+      <li><a href="#frontend">Struttura frontend</a></li>
+      <li><a href="#sprint">Avanzamento per sprint</a></li>
+      <li><a href="#rischi">Rischi noti</a></li>
+      <li><a href="#roadmap">Roadmap</a></li>
+      <li><a href="#demo">Cheat sheet demo</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <div class="cover">
+      <p class="cover__eyebrow">Learning by Project — WSA · ITS ICT Piemonte</p>
+      <h1>BlueHarbor Terminal, spiegato dall'inizio alla fine</h1>
+      <p class="cover__lede">
+        Tutto quello che serve per parlarne con lo sponsor domani: cosa fa il sistema, come
+        è costruito, cosa funziona davvero oggi e cosa manca ancora. Fonte di verità: il
+        codice in <code>blueharbor_sprint2</code>, letto e verificato in esecuzione stasera.
+      </p>
+      <div class="cover__meta">
+        <span><strong>Repo</strong> lufo-336/projectBlueHarbor</span>
+        <span><strong>Stack</strong> React + Vite · ASP.NET Core · SQL Server</span>
+        <span><strong>Aggiornato</strong> 7 luglio 2026</span>
+      </div>
+    </div>
+
+    <section id="sommario">
+      <div class="section-head"><span class="section-num">01</span><h2>Sommario esecutivo</h2></div>
+      <p>
+        BlueHarbor è un'applicazione didattica che digitalizza un piccolo terminal container:
+        un <strong>Operatore</strong> registra le navi in arrivo, uno <strong>Scheduler</strong>
+        le assegna a una delle 8 banchine del porto rispettando la compatibilità di dimensione
+        e l'algoritmo di accodamento. Il tempo è simulato: un "giorno virtuale" avanza a comando
+        e le navi che finiscono l'occupazione liberano la banchina.
+      </p>
+      <p>
+        Il backend (ASP.NET Core + SQL Server) è <strong>completo e corretto</strong>: l'ho
+        rimesso in piedi stasera e testato in diretta contro il database reale. Il frontend
+        aveva invece un problema serio — le due schermate principali mostravano una dashboard
+        finta al posto delle funzionalità vere, per via di un restyling grafico che ha
+        sovrascritto il collegamento alle API. L'ho ricollegato stasera: la sezione
+        <a href="#stasera">"Riparato stasera"</a> elenca esattamente cosa, e la
+        <a href="#demo">cheat sheet finale</a> ti dà il percorso passo-passo da seguire domani.
+      </p>
+    </section>
+
+    <section id="stato">
+      <div class="section-head"><span class="section-num">02</span><h2>Stato attuale</h2></div>
+      <div class="statusgrid">
+        <div class="statuscard">
+          <div class="statuscard__label">Backend</div>
+          <div class="statuscard__value"><span class="chip chip--good">Solido</span></div>
+          <div class="statuscard__note">Build pulita, API testate una a una stasera</div>
+        </div>
+        <div class="statuscard">
+          <div class="statuscard__label">Frontend</div>
+          <div class="statuscard__value"><span class="chip chip--good">Ricollegato</span></div>
+          <div class="statuscard__note">Era su dati finti fino a stasera — vedi §3</div>
+        </div>
+        <div class="statuscard">
+          <div class="statuscard__label">Sicurezza login</div>
+          <div class="statuscard__value"><span class="chip chip--warn">Parziale</span></div>
+          <div class="statuscard__note">JWT ok, ma nessun endpoint protetto per ruolo</div>
+        </div>
+        <div class="statuscard">
+          <div class="statuscard__label">Sprint completati</div>
+          <div class="statuscard__value">6<span style="color:var(--muted); font-size:0.9rem;"> / 10</span></div>
+          <div class="statuscard__note">Sprint 7–10 non ancora iniziati</div>
+        </div>
+      </div>
+      <p>
+        In una frase: <strong>il motore funziona</strong> (generazione navi, accodamento,
+        avanzamento del tempo, login), <strong>la carrozzeria era scollegata</strong> e ora è
+        stata rimessa a posto. Nessuna riscrittura è servita — i pezzi giusti esistevano già
+        nel codice, erano solo orfani.
+      </p>
+    </section>
+
+    <section id="stasera">
+      <div class="section-head"><span class="section-num">03</span><h2>Cosa ho riparato stasera</h2></div>
+      <p>
+        Il 25 giugno un restyling grafico del frontend ("sprint5+ tommy-ale frontend") ha
+        sostituito le viste Operatore/Scheduler — che chiamavano davvero le API — con una
+        dashboard dimostrativa a dati fissi (KPI finti, un orario navi inventato). I componenti
+        reali sono rimasti nel codice, semplicemente non più importati da nessuna parte.
+      </p>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>File</th><th>Problema trovato</th><th>Intervento</th></tr></thead>
+          <tbody>
+            <tr><td><code>OperatorView.jsx</code></td><td>Dashboard con KPI finti ("24 Active Tasks"...), zero chiamate API</td><td>Ripristinato il rendering di <code>ShipForm</code> + <code>ShipTable</code></td></tr>
+            <tr><td><code>SchedulerView.jsx</code></td><td>Tabella orari finta ("MSC Adriana"...), zero chiamate API</td><td>Fetch reale di <code>getSchedulerDashboard()</code>, resa con <code>BerthBoard</code> + <code>PendingShipsList</code></td></tr>
+            <tr><td><code>ShipAssignment.jsx</code></td><td>Mancava il <code>return</code> JSX: componente incompleto, avrebbe fatto crash</td><td>Completato: select banchine compatibili + assegnazione</td></tr>
+            <tr><td><code>PendingShipsList.jsx</code></td><td>Non passava la lista banchine al figlio</td><td>Aggiunta prop <code>berths</code></td></tr>
+            <tr><td><code>Topbar.jsx</code> + <code>DayContext.jsx</code></td><td>Il bottone "Next Day" era sparito dal markup (restava solo il CSS); il giorno mostrato era una data del browser, non quello reale</td><td>Giorno virtuale letto da <code>GET /api/system/current-day</code>, bottone collegato a <code>POST /api/time/next-day</code></td></tr>
+            <tr><td><code>ToastContext.jsx</code></td><td><code>showSuccess</code>/<code>showError</code> usate ma mai definite</td><td>Aggiunte come wrapper di <code>addToast</code></td></tr>
+            <tr><td><code>AuthContext.jsx</code></td><td>Il tab "Sign Up" chiamava una <code>register()</code> inesistente → crash</td><td>Messaggio pulito invece del crash (non esiste un endpoint di registrazione)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Verifica: build C# e build Vite pulite, poi ho simulato l'intero flusso sull'API reale
+        (creata una nave, vista tra le pending, assegnata a una banchina compatibile, avanzato
+        il giorno) e ripulito subito dopo i dati di test dal database.
+      </p>
+    </section>
+
+    <section id="architettura">
+      <div class="section-head"><span class="section-num">04</span><h2>Architettura a tre livelli</h2></div>
+      <p>
+        Tre pezzi separati che comunicano solo via HTTP/JSON. In sviluppo girano su porte
+        diverse; il dev server di Vite fa da proxy per <code>/api</code> verso il backend,
+        quindi il browser parla sempre con un'unica origine.
+      </p>
+      <div class="arch">
+        <div class="arch__box">
+          <span class="tag">:5173 (dev)</span>
+          <h4>Frontend</h4>
+          <p>React 19 + Vite. Contesti per auth, ruolo, giorno virtuale, lingua, notifiche.</p>
+        </div>
+        <div class="arch__arrow">→</div>
+        <div class="arch__box">
+          <span class="tag">:5279 (dev)</span>
+          <h4>Backend</h4>
+          <p>ASP.NET Core Web API (C#). Controller sottili, regole di dominio isolate in servizi.</p>
+        </div>
+        <div class="arch__arrow">→</div>
+        <div class="arch__box">
+          <span class="tag">EF Core</span>
+          <h4>Database</h4>
+          <p>SQL Server. 4 tabelle, vincoli CHECK a livello di schema, non solo in C#.</p>
+        </div>
+      </div>
+      <p>Componenti chiave lato backend:</p>
+      <ul class="plain">
+        <li><code>ShipGeneratorService</code> — genera size/arrivo/durata casuali per una nave nuova</li>
+        <li><code>SchedulingRules</code> — funzioni pure: compatibilità di size + algoritmo di accodamento (nessun accesso al DB, facili da testare)</li>
+        <li><code>TimeService</code> — avanzamento del giorno virtuale, transazionale (o avanza e rilascia le navi insieme, o non cambia nulla)</li>
+        <li><code>TokenService</code> / <code>PasswordHasher</code> — emissione/verifica JWT, hashing SHA-256 (senza salt: semplificazione dichiaratamente didattica)</li>
+        <li><code>GlobalExceptionHandler</code> — rete di sicurezza: converte eccezioni non gestite in un 500 pulito, mai uno stack trace al client</li>
+      </ul>
+    </section>
+
+    <section id="dati">
+      <div class="section-head"><span class="section-num">05</span><h2>Modello dati</h2></div>
+      <p>Quattro tabelle. <code>Ships</code> è il cuore del sistema; <code>Settings</code> è una tabella chiave-valore usata solo per il giorno virtuale.</p>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Tabella</th><th>Colonne rilevanti</th><th>Vincoli</th></tr></thead>
+          <tbody>
+            <tr><td><code>Berths</code></td><td>Id, Name, Size</td><td>Size ∈ {XL,L,M,S} · Name univoco · 8 righe fisse, seeding una tantum</td></tr>
+            <tr><td><code>Ships</code></td><td>Id, Name, Size, ArrivalDay, Duration, Status, BerthId (FK, null), OccupationStartDay (null), Notes</td><td>Size ∈ {XL,L,M,S} · Status ∈ {Pending,Assigned,Departed} · ArrivalDay ≥ 0 · 3 ≤ Duration ≤ 15 · FK_Ships_Berths</td></tr>
+            <tr><td><code>Settings</code></td><td>Key (PK), Value</td><td>Riga unica in uso: <code>CurrentVirtualDay</code></td></tr>
+            <tr><td><code>Users</code></td><td>Id, Username, PasswordHash, Role</td><td>Username univoco · Role ∈ {Operator,Scheduler}</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>Ciclo di vita di una nave</h3>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Status</th><th>BerthId</th><th>OccupationStartDay</th><th>Quando</th></tr></thead>
+          <tbody>
+            <tr><td><span class="chip chip--warn">Pending</span></td><td class="num">NULL</td><td class="num">NULL</td><td>Appena creata dall'Operatore</td></tr>
+            <tr><td><span class="chip chip--info">Assigned</span></td><td>valorizzato</td><td>valorizzato</td><td>Quando lo Scheduler la assegna</td></tr>
+            <tr><td><span class="chip chip--good">Departed</span></td><td>resta valorizzato</td><td>resta valorizzato</td><td>Al Next Day, quando l'occupazione finisce</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Una nave <code>Departed</code> mantiene i dati della banchina come storico: non si azzerano, servono solo a ricostruire cosa è successo. Lo slot risulta comunque libero per le date successive.</p>
+    </section>
+
+    <section id="dominio">
+      <div class="section-head"><span class="section-num">06</span><h2>Regole di dominio</h2></div>
+      <p>
+        Le uniche due regole che contano davvero: una nave può andare solo su una banchina
+        della sua <strong>stessa size</strong>, e l'assegnazione parte dal
+        <strong>primo giorno libero</strong> della banchina — non prima dell'arrivo della nave,
+        non nel passato.
+      </p>
+      <h3>Esempio: due navi sulla stessa banchina M-1</h3>
+      <p>Ship A arriva il giorno 2, dura 5 giorni: parte subito, occupa 2–6. Ship B arriva il giorno 3, dura 4 giorni: il suo arrivo cade dentro l'occupazione di A, quindi slitta a 7.</p>
+      <div class="timeline">
+        <table>
+          <thead>
+            <tr><th></th>
+              <th class="num">1</th><th class="num">2</th><th class="num">3</th><th class="num">4</th>
+              <th class="num">5</th><th class="num">6</th><th class="num">7</th><th class="num">8</th>
+              <th class="num">9</th><th class="num">10</th><th class="num">11</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="text-align:left; color:var(--muted);">Ship A</td>
+              <td></td><td colspan="5"><span class="tl-bar" style="width:100%; background:var(--steel);"></span></td>
+              <td colspan="5"></td>
+            </tr>
+            <tr>
+              <td style="text-align:left; color:var(--muted);">Ship B</td>
+              <td colspan="6"></td><td colspan="4"><span class="tl-bar" style="width:100%; background:var(--bronze);"></span></td><td></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="font-size:0.8125rem; color:var(--muted);">Banchina libera dal giorno 7 (A) e dall'11 (B). Questo è il test di accettazione ufficiale della roadmap, e corrisponde esattamente al comportamento di <code>SchedulingRules.ComputeOccupationStartDay</code>.</p>
+
+      <h3>Tempo virtuale</h3>
+      <p>
+        Un intero in <code>Settings.CurrentVirtualDay</code>, non un orologio reale. "Next Day"
+        incrementa il contatore e marca <code>Departed</code> tutte le navi <code>Assigned</code>
+        la cui occupazione è finita (<code>OccupationStartDay + Duration ≤ nuovo giorno</code>),
+        dentro un'unica transazione. Il Next Day <strong>non assegna mai</strong> navi da solo:
+        l'assegnazione è sempre un'azione esplicita dello Scheduler.
+      </p>
+    </section>
+
+    <section id="api">
+      <div class="section-head"><span class="section-num">07</span><h2>Riferimento API</h2></div>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Metodo</th><th>Percorso</th><th>Ruolo pensato</th><th>Cosa fa</th></tr></thead>
+          <tbody>
+            <tr><td><code>POST</code></td><td><code>/api/auth/login</code></td><td>—</td><td>Verifica credenziali, rilascia JWT (scade dopo 8h)</td></tr>
+            <tr><td><code>GET</code></td><td><code>/api/auth/me</code></td><td>—</td><td>Verifica la sessione all'avvio dell'app</td></tr>
+            <tr><td><code>POST</code></td><td><code>/api/auth/logout</code></td><td>—</td><td>Simbolico: col JWT stateless, il client scarta solo il token</td></tr>
+            <tr><td><code>GET</code></td><td><code>/api/system/current-day</code></td><td>—</td><td>Giorno virtuale corrente</td></tr>
+            <tr><td><code>GET</code></td><td><code>/api/ships</code></td><td>—</td><td>Elenco navi, ordinate per Id</td></tr>
+            <tr><td><code>POST</code></td><td><code>/api/ships</code></td><td>Operatore</td><td>Crea nave: solo il nome è manuale, il resto è generato</td></tr>
+            <tr><td><code>GET</code></td><td><code>/api/scheduler/dashboard</code></td><td>Scheduler</td><td>Navi Pending + stato di tutte le banchine in un'unica risposta</td></tr>
+            <tr><td><code>POST</code></td><td><code>/api/ships/{id}/assign</code></td><td>Scheduler</td><td>Assegna a una banchina: valida size, calcola il primo slot libero</td></tr>
+            <tr><td><code>POST</code></td><td><code>/api/time/next-day</code></td><td>—</td><td>Avanza il giorno virtuale, rilascia le navi concluse</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout callout--warn">
+        <div class="callout__label">Da sapere prima che lo chieda lo sponsor</div>
+        <p>
+          Nessuno di questi endpoint verifica oggi il ruolo lato server: rispondono 200 anche
+          senza login. La separazione Operatore/Scheduler è reale nell'interfaccia, non è
+          ancora sicurezza. È un lavoro noto e pianificato (vedi <a href="#rischi">Rischi noti</a>),
+          non qualcosa che si è rotto stasera.
+        </p>
+      </div>
+    </section>
+
+    <section id="frontend">
+      <div class="section-head"><span class="section-num">08</span><h2>Struttura frontend</h2></div>
+      <p>React 19 + Vite, nessun router — la vista cambia in base al ruolo dell'utente autenticato, non all'URL.</p>
+      <h3>Contesti (stato globale)</h3>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Contesto</th><th>Responsabilità</th></tr></thead>
+          <tbody>
+            <tr><td><code>AuthContext</code></td><td>Utente corrente, login/logout, token in <code>localStorage</code></td></tr>
+            <tr><td><code>RoleContext</code></td><td>Ruolo attivo — valorizzato dalla risposta del login</td></tr>
+            <tr><td><code>DayContext</code></td><td>Giorno virtuale reale, letto dal backend (ricollegato stasera)</td></tr>
+            <tr><td><code>LanguageContext</code></td><td>Traduzioni IT/EN/ES</td></tr>
+            <tr><td><code>ToastContext</code></td><td>Notifiche di successo/errore</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>Percorso di un'azione (esempio: assegnazione)</h3>
+      <ol class="plain">
+        <li><code>SchedulerView</code> chiama <code>getSchedulerDashboard()</code> e passa navi pending + banchine a <code>PendingShipsList</code></li>
+        <li>Selezionando una nave si apre <code>ShipAssignment</code>, che filtra le banchine per <code>size</code> compatibile</li>
+        <li>Alla conferma, <code>assignShip(shipId, berthId)</code> chiama <code>POST /api/ships/{id}/assign</code></li>
+        <li>La risposta aggiorna la lista tramite un contatore di refresh locale — nessuno stato globale complesso</li>
+      </ol>
+    </section>
+
+    <section id="sprint">
+      <div class="section-head"><span class="section-num">09</span><h2>Avanzamento per sprint</h2></div>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Sprint</th><th>Tema</th><th>Database</th><th>Backend</th><th>Frontend</th><th>QA</th></tr></thead>
+          <tbody>
+            <tr><td class="num">1</td><td>Infrastruttura</td><td><span class="chip chip--good">fatto</span></td><td><span class="chip chip--good">fatto</span></td><td><span class="chip chip--good">fatto</span></td><td><span class="chip chip--good">fatto</span></td></tr>
+            <tr><td class="num">2</td><td>Flusso Operatore</td><td><span class="chip chip--good">fatto</span></td><td><span class="chip chip--good">fatto</span></td><td><span class="chip chip--good">fatto</span></td><td><span class="chip chip--good">fatto</span></td></tr>
+            <tr><td class="num">3</td><td>Flusso Scheduler</td><td><span class="chip chip--good">fatto</span></td><td><span class="chip chip--good">fatto</span></td><td><span class="chip chip--good">fatto</span></td><td><span class="chip chip--good">fatto</span></td></tr>
+            <tr><td class="num">4</td><td>Next Day</td><td><span class="chip chip--good">fatto</span></td><td><span class="chip chip--good">fatto</span></td><td><span class="chip chip--good">fatto</span></td><td><span class="chip chip--bad">da fare</span></td></tr>
+            <tr><td class="num">5</td><td>Robustezza + errori</td><td><span class="chip chip--good">fatto</span></td><td><span class="chip chip--good">fatto</span></td><td><span class="chip chip--good">fatto</span></td><td><span class="chip chip--bad">da fare</span></td></tr>
+            <tr><td class="num">6</td><td>Login / sicurezza</td><td><span class="chip chip--bad">da fare</span></td><td><span class="chip chip--warn">parziale</span></td><td><span class="chip chip--good">fatto</span></td><td><span class="chip chip--bad">da fare</span></td></tr>
+            <tr><td class="num">7</td><td>Validazione / paginazione</td><td>—</td><td><span class="chip chip--bad">da fare</span></td><td><span class="chip chip--bad">da fare</span></td><td><span class="chip chip--bad">da fare</span></td></tr>
+            <tr><td class="num">8</td><td>Storico (audit)</td><td><span class="chip chip--bad">da fare</span></td><td><span class="chip chip--bad">da fare</span></td><td><span class="chip chip--bad">da fare</span></td><td><span class="chip chip--bad">da fare</span></td></tr>
+            <tr><td class="num">9</td><td>Docker / deploy</td><td><span class="chip chip--bad">da fare</span></td><td><span class="chip chip--bad">da fare</span></td><td><span class="chip chip--bad">da fare</span></td><td><span class="chip chip--bad">da fare</span></td></tr>
+            <tr><td class="num">10</td><td>Accessibilità</td><td>—</td><td>—</td><td><span class="chip chip--bad">da fare</span></td><td><span class="chip chip--bad">da fare</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Il cuore dell'applicazione (Sprint 1–5) è completo e funziona end-to-end — l'ho verificato stasera girando l'app dal vivo, non solo leggendo il codice. Sprint 6 è a metà: il login funziona, manca la protezione degli endpoint. Dallo Sprint 7 in poi il lavoro non è iniziato.</p>
+    </section>
+
+    <section id="rischi">
+      <div class="section-head"><span class="section-num">10</span><h2>Rischi noti</h2></div>
+      <p>Cose che è meglio nominare tu prima che le trovi lo sponsor.</p>
+      <div class="callout callout--warn">
+        <div class="callout__label">Autenticazione incompleta</div>
+        <p>Login JWT reale, ma nessun endpoint richiede il token: <code>/api/ships</code>, <code>/assign</code>, <code>/next-day</code> rispondono a chiunque. Hashing password SHA-256 senza salt (dichiaratamente una semplificazione didattica).</p>
+      </div>
+      <div class="callout callout--warn">
+        <div class="callout__label">Nessun test automatico</div>
+        <p>Zero unit test, zero framework di test installato. L'algoritmo di accodamento sarebbe il candidato naturale — è una funzione pura, facile da testare in isolamento.</p>
+      </div>
+      <div class="callout">
+        <div class="callout__label">Registrazione non disponibile</div>
+        <p>Il form "Sign Up" esiste graficamente ma non c'è un endpoint di registrazione nel backend. Da stasera mostra un messaggio chiaro invece di un errore JavaScript.</p>
+      </div>
+      <div class="callout">
+        <div class="callout__label">Tre visioni di autenticazione da allineare in team</div>
+        <p>La card Trello Sprint 6 chiede sessioni cookie-based; il frontend già implementato usa token in <code>localStorage</code>; il backend implementato ora usa JWT Bearer. Frontend e backend combaciano tra loro ma non con la card — decisione di gruppo da chiudere prima di andare oltre.</p>
+      </div>
+    </section>
+
+    <section id="roadmap">
+      <div class="section-head"><span class="section-num">11</span><h2>Roadmap — Sprint 7–10</h2></div>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Sprint</th><th>Obiettivo</th></tr></thead>
+          <tbody>
+            <tr><td class="num">7</td><td>Validazione input, paginazione/filtri su <code>GET /api/ships</code>, messaggi d'errore più specifici in UI</td></tr>
+            <tr><td class="num">8</td><td>Tabella <code>AssignmentHistory</code> (append-only), endpoint <code>GET /api/history</code>, sezione Storico nella vista Scheduler</td></tr>
+            <tr><td class="num">9</td><td>SQL Server in container, Dockerfile per backend e frontend, un unico <code>docker-compose.yml</code></td></tr>
+            <tr><td class="num">10</td><td>Navigazione da tastiera, contrasto WCAG AA, audit Lighthouse/axe</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="demo">
+      <div class="section-head"><span class="section-num">12</span><h2>Cheat sheet per la demo dal vivo</h2></div>
+      <p>Se ti chiedono di vederlo in azione, questo è il percorso più chiaro da mostrare.</p>
+
+      <h3>Credenziali demo</h3>
+      <div class="creds">
+        <div class="creds__card">
+          <div class="creds__role">Operatore</div>
+          <code>operator@blueharbor</code>
+          <code>operator123</code>
+        </div>
+        <div class="creds__card">
+          <div class="creds__role">Scheduler</div>
+          <code>scheduler@blueharbor</code>
+          <code>scheduler123</code>
+        </div>
+      </div>
+
+      <h3>Avvio (se i server non sono già attivi)</h3>
+      <pre><code>cd blueharbor_sprint2/BlueHarbor_QPD_WSA.Server
+dotnet run --urls http://localhost:5279
+
+cd blueharbor_sprint2/frontend
+npm run dev   # http://localhost:5173</code></pre>
+
+      <h3>Percorso consigliato</h3>
+      <ol class="steps">
+        <li><strong>Login come Operatore.</strong><span class="fine">Mostra il form di registrazione nave: solo il nome è manuale, size/arrivo/durata sono generati dal sistema.</span></li>
+        <li><strong>Registra una nave</strong> e mostra che appare subito nella tabella sotto, in stato Pending.</li>
+        <li><strong>Logout, poi login come Scheduler.</strong><span class="fine">La dashboard mostra le navi pending e le 8 banchine con il loro stato reale.</span></li>
+        <li><strong>Assegna la nave appena creata</strong> a una banchina della stessa size — fai notare che il menu propone solo le banchine compatibili.</li>
+        <li><strong>Premi "Next Day" un paio di volte</strong> nella Topbar e mostra il giorno virtuale avanzare — è il cuore concettuale del progetto: tempo simulato, non reale.</li>
+        <li><strong>Se hai tempo</strong>, apri <code>/scalar/v1</code> sul backend per mostrare tutte le API documentate e testabili da browser.</li>
+      </ol>
+
+      <div class="callout callout--bad">
+        <div class="callout__label">Prima di iniziare</div>
+        <p>
+          Il database ha oggi 31 navi e giorno virtuale 128 (dati di sviluppo accumulati). Se
+          vuoi una demo pulita da un giorno 1 con poche navi, è il momento di far girare lo
+          script di reset del database <em>prima</em> di collegarti — non a metà presentazione.
+        </p>
+      </div>
+    </section>
+
+    <footer>
+      Documento generato da Claude a partire dal codice di <code>blueharbor_sprint2</code>,
+      dalla cronologia git e dalla documentazione locale in <code>documentazione/</code>.
+      Verificato eseguendo l'applicazione dal vivo il 7 luglio 2026.
+    </footer>
+  </main>
+</div>
+
+</body></html>

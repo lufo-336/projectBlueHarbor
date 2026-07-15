@@ -1,0 +1,45 @@
+# ═══ SPRINT 9 ═══
+# Demo riproducibile: `docker compose up` = SQL Server + init schema/seed +
+# backend + frontend. La password SA è SOLO per l'ambiente demo locale.
+services:
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${SA_PASSWORD:-BlueHarbor!2026}"
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$${MSSQL_SA_PASSWORD}\" -C -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  # Container usa-e-getta: esegue gli script SQL in ordine e termina.
+  db-init:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    depends_on:
+      mssql:
+        condition: service_healthy
+    volumes:
+      - ./database:/scripts:ro
+    environment:
+      MSSQL_SA_PASSWORD: "${SA_PASSWORD:-BlueHarbor!2026}"
+    entrypoint: >
+      bash -c '/opt/mssql-tools18/bin/sqlcmd -S mssql -U sa -P "$${MSSQL_SA_PASSWORD}" -C
+      -i /scripts/01-schema.sql -i /scripts/03-history.sql -i /scripts/02-seed.sql'
+
+  backend:
+    build: ./backend
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+    environment:
+      # Sovrascrive appsettings.json: stessa chiave, sorgente diversa.
+      ConnectionStrings__DefaultConnection: "Server=mssql;Database=BlueHarborCompleto;User Id=sa;Password=${SA_PASSWORD:-BlueHarbor!2026};TrustServerCertificate=True"
+      ASPNETCORE_ENVIRONMENT: "Production"
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "8081:80"
+    depends_on:
+      - backend

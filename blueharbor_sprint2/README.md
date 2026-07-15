@@ -1,69 +1,66 @@
 # BlueHarbor Terminal
 
-BlueHarbor Terminal e' un'applicazione web interna sviluppata come progetto "Learning by
-Project" del corso Web Solutions Architect (ITS ICT Piemonte, biennio 2025-2027).
+Web app per la gestione delle banchine di un terminal container (progetto
+Learning by Project, ITS WSA 2025-2027). Due ruoli:
 
-## Il progetto
+- **Operatore** — registra le navi in arrivo (il sistema genera taglia,
+  giorno di arrivo e durata della sosta; la nave nasce `Pending`);
+- **Scheduler** — assegna le navi alle 8 banchine fisse (1 XL, 1 L, 2 M, 4 S,
+  solo taglie identiche) con **accodamento**: se la banchina è occupata, la
+  nave parte dal primo slot libero. Il tempo avanza col pulsante **Next Day**
+  (giorno virtuale, nessun real-time); a fine sosta la nave diventa `Departed`.
 
-BlueHarbor e' una compagnia di spedizioni fittizia che gestisce un piccolo terminal container.
-Oggi le operazioni del terminal sono coordinate a mano, con poca visibilita' e diverse
-inefficienze. L'applicazione serve a digitalizzare tre attivita' di base: registrare le navi
-in arrivo, pianificare l'uso delle banchine e coordinare il lavoro tra gli operatori.
+## Architettura
 
-Tutti i dati, i nomi e le regole sono fittizi e creati a scopo didattico.
+React 19 + Vite (frontend) → ASP.NET Core Web API con EF Core (backend) →
+SQL Server. Autenticazione JWT con ruoli (`Operator` / `Scheduler`) applicata
+su tutti gli endpoint. Errori come Problem Details (RFC 7807).
 
-## Come funziona
+| Cartella | Contenuto |
+|---|---|
+| `BlueHarbor_QPD_WSA.Server/` | Backend: controller, servizi di dominio (`SchedulingRules`, `TimeService`), auth |
+| `frontend/` | Frontend React: viste Operatore e Scheduler (timeline + assegnazione guidata) |
+| `database/` | Script T-SQL (usare il più recente, `script5.sql`) |
 
-L'applicazione prevede due ruoli:
+## Prerequisiti
 
-- Operatore: registra le navi in arrivo. Per ogni nuova nave il sistema genera automaticamente
-  la dimensione, il giorno di arrivo e la durata di occupazione della banchina.
-- Scheduler: assegna le navi alle banchine disponibili, rispettando la compatibilita' di
-  dimensione e calcolando il primo periodo libero della banchina.
+- .NET SDK 10, Node.js 20+, SQL Server locale (istanza di default) con SSMS.
 
-Il tempo non e' reale. L'applicazione tiene un "giorno corrente virtuale" che avanza con un
-pulsante "Next Day". Quando una nave completa la sua occupazione viene segnata come partita e
-libera la banchina.
+## Avvio in locale
 
-Il porto ha otto banchine fisse: una XL, una L, due M e quattro S. Ogni banchina puo' ospitare
-solo navi della propria dimensione.
+1. **Database** (solo la prima volta): eseguire `database/script5.sql` in SSMS
+   → crea il DB `BlueHarbor` con le 8 banchine e il giorno virtuale a 1.
+   La connection string è in `BlueHarbor_QPD_WSA.Server/appsettings.json`.
+2. **Backend**: `dotnet run --launch-profile https` dentro
+   `BlueHarbor_QPD_WSA.Server/` → API su `https://localhost:7008`
+   (in Development gli utenti demo vengono seminati in automatico).
+3. **Frontend**: `npm install` e `npm run dev` dentro `frontend/` →
+   `http://localhost:5173` (il proxy Vite gira `/api` sul backend).
 
-Una nave attraversa tre stati: in attesa di assegnazione (Pending), assegnata a una banchina
-(Assigned), occupazione conclusa (Departed).
+## Utenti demo
 
-## Tecnologie
+| Ruolo | Email | Password |
+|---|---|---|
+| Operatore | `operator@blueharbor` | `operator123` |
+| Scheduler | `scheduler@blueharbor` | `scheduler123` |
 
-- Database: SQL Server
-- Backend: ASP.NET Core Web API (C#)
-- Frontend: React con Vite
+## Checklist demo (verifica end-to-end)
 
-L'architettura e' a tre livelli: l'interfaccia React comunica con le API in C#, che a loro
-volta leggono e scrivono sul database SQL Server.
+1. Login Operatore → registra una nave → toast con taglia/arrivo/durata generate.
+2. Login Scheduler → seleziona la nave → le banchine compatibili si evidenziano
+   con l'anteprima tratteggiata del primo giorno libero → "Assegna".
+3. Caso di accodamento: assegna una seconda nave alla stessa banchina →
+   l'anteprima (e l'assegnazione) parte DOPO la fine dell'occupazione esistente.
+4. "Next Day" fino a fine sosta → la nave diventa `Departed` e libera la banchina.
+5. Refresh della pagina dopo il login → si resta dentro l'app (niente flash login).
 
-## Struttura del repository
+## Note tecniche per chi sviluppa
 
-```
-/backend         applicazione ASP.NET Core Web API (C#)   [in arrivo]
-/frontend        applicazione React + Vite                [in arrivo]
-/database        script SQL (schema, seeding, query)      [in arrivo]
-/docs            documentazione architetturale            [in arrivo]
-/documentazione  materiale di progetto e pianificazione
-```
-
-## Documentazione
-
-Il materiale di pianificazione si trova in `documentazione/claude/`:
-
-- `Guida_Gestione_Progetto_Trello.md` - metodo di lavoro, Trello e roadmap a sprint
-- `modello-dati.md` - schema del database
-- `accodamento-algoritmo.md` - la logica di assegnazione delle banchine, con esempi
-- `blueharbor_roadmap.md` - scomposizione tecnica in tappe
-
-## Team
-
-Il progetto e' realizzato da un gruppo di cinque persone, con ruoli dedicati a database,
-backend C#, frontend e coordinamento.
-
-## Stato del progetto
-
-Sprint 0 - Setup e pianificazione. Lo sviluppo del codice inizia nello Sprint 1.
+- Il contratto API è documentato in ogni controller; il frontend vi accede solo
+  tramite `frontend/src/services/api.js`.
+- L'algoritmo di accodamento vive in `Services/SchedulingRules.cs` (funzioni
+  pure). Il frontend ne tiene una replica in `frontend/src/services/scheduling.js`
+  SOLO per l'anteprima: se si cambia la regola, aggiornare entrambi
+  (check di parità: `node checks/scheduling.check.mjs` da `frontend/`).
+- Stack scelto a giugno 2026: il data access usa EF Core (deviazione consapevole
+  dal piano ADO.NET, decisa il 2026-07-15 per non riscrivere il layer dati).
