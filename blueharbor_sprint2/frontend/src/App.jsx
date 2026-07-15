@@ -1,24 +1,25 @@
 import { useAuth } from './context/AuthContext.jsx';
+import { DayProvider } from './context/DayContext.jsx';
 import LoadingSpinner from './components/LoadingSpinner.jsx';
 import AuthPage from './views/AuthPage.jsx';
+import Topbar from './components/Topbar.jsx';
 
 export default function App() {
-  const { user, loading, logout } = useAuth();
+  const { user, loading } = useAuth();
 
-  // Finché non sappiamo se il token salvato è valido non mostriamo niente
-  // di definitivo: così al refresh non c'è il flash della pagina di login.
   if (loading) return <LoadingSpinner fullPage />;
   if (!user) return <AuthPage />;
 
   return (
-    <div className="app-shell">
-      <main className="app-main">
-        <div className="card">
-          <h1>Benvenuto, {user.name}</h1>
-          <p>Ruolo: {user.role}. Topbar e viste operative arrivano nei Task 5-7.</p>
-          <button className="btn btn-ghost" onClick={logout}>Esci</button>
-        </div>
-      </main>
-    </div>
+    <DayProvider>
+      <div className="app-shell">
+        <Topbar />
+        <main className="app-main">
+          <div className="card">
+            <p>Vista {user.role === 'Operator' ? 'Operatore' : 'Scheduler'} in arrivo nei Task 6-7.</p>
+          </div>
+        </main>
+      </div>
+    </DayProvider>
   );
 }
