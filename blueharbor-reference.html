@@ -668,7 +668,7 @@
             <tr><td><code>POST</code></td><td><code>/api/auth/logout</code></td><td>pubblico</td><td>Simbolico: col JWT stateless, il client scarta solo il token</td></tr>
             <tr><td><code>GET</code></td><td><code>/api/system/current-day</code></td><td>autenticato</td><td>Giorno virtuale corrente</td></tr>
             <tr><td><code>GET</code></td><td><code>/api/ships</code></td><td>Operatore</td><td>Elenco navi, ordinate per Id</td></tr>
-            <tr><td><code>POST</code></td><td><code>/api/ships</code></td><td>Operatore</td><td>Crea nave: solo il nome è manuale, il resto è generato</td></tr>
+            <tr><td><code>POST</code></td><td><code>/api/ships</code></td><td>Operatore</td><td>Crea nave: nome (obbligatorio) e nota (facoltativa, ≤255) sono manuali, il resto è generato</td></tr>
             <tr><td><code>GET</code></td><td><code>/api/scheduler/dashboard</code></td><td>Scheduler</td><td>Navi Pending + stato di tutte le banchine in un'unica risposta</td></tr>
             <tr><td><code>POST</code></td><td><code>/api/ships/{id}/assign</code></td><td>Scheduler</td><td>Assegna a una banchina: valida size, calcola il primo slot libero</td></tr>
             <tr><td><code>POST</code></td><td><code>/api/time/next-day</code></td><td>autenticato</td><td>Avanza il giorno virtuale, rilascia le navi concluse</td></tr>

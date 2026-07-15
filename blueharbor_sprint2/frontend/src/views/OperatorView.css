@@ -9,6 +9,8 @@
 
 .operator__form { display: flex; gap: 0.75rem; align-items: end; flex-wrap: wrap; }
 .operator__form .field { flex: 1; min-width: 220px; }
+.operator__form textarea { resize: vertical; font: inherit; }
+.field__optional { color: var(--text-muted); font-weight: 400; font-size: 0.85em; }
 
 .operator__table-wrap { overflow-x: auto; }
 .operator__table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
@@ -18,4 +20,8 @@
 .operator__table th {
   color: var(--text-muted); font-size: 0.8rem;
   text-transform: uppercase; letter-spacing: 0.06em;
+}
+.operator__notes {
+  max-width: 220px; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; color: var(--text-muted);
 }

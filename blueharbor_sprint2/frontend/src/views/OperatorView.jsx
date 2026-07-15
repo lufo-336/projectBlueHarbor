@@ -12,6 +12,7 @@ export default function OperatorView() {
   const { showSuccess, showError } = useToast();
   const [ships, setShips] = useState(null); // null = primo caricamento in corso
   const [name, setName] = useState('');
+  const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const loadShips = useCallback(async () => {
@@ -32,10 +33,11 @@ export default function OperatorView() {
     if (!trimmed) return;
     setSubmitting(true);
     try {
-      const ship = await api.createShip(trimmed);
+      const ship = await api.createShip(trimmed, notes.trim() || null);
       // Il toast mostra i dati GENERATI dal sistema: è il cuore del flusso Operatore.
       showSuccess(`${ship.name} registrata — taglia ${ship.size}, arrivo giorno ${ship.arrivalDay}, durata ${ship.duration}gg.`);
       setName('');
+      setNotes('');
       await loadShips();
     } catch (err) {
       showError(err.message);
@@ -76,6 +78,11 @@ export default function OperatorView() {
             <input id="ship-name" value={name} onChange={(e) => setName(e.target.value)}
                    placeholder="Es. Aurora" required />
           </div>
+          <div className="field">
+            <label htmlFor="ship-notes">Note <span className="field__optional">(facoltative)</span></label>
+            <textarea id="ship-notes" value={notes} onChange={(e) => setNotes(e.target.value)}
+                      placeholder="Es. carico refrigerato, priorità alta…" rows={2} maxLength={255} />
+          </div>
           <button type="submit" className="btn btn-primary" disabled={submitting}>
             {submitting ? 'Registro…' : 'Registra'}
           </button>
@@ -90,7 +97,7 @@ export default function OperatorView() {
           <div className="operator__table-wrap">
             <table className="operator__table">
               <thead>
-                <tr><th>Nome</th><th>Taglia</th><th>Arrivo</th><th>Durata</th><th>Stato</th><th>Banchina</th></tr>
+                <tr><th>Nome</th><th>Taglia</th><th>Arrivo</th><th>Durata</th><th>Stato</th><th>Banchina</th><th>Note</th></tr>
               </thead>
               <tbody>
                 {ships.map((ship) => (
@@ -105,6 +112,7 @@ export default function OperatorView() {
                       </span>
                     </td>
                     <td className="mono">{ship.berthId ? `#${ship.berthId}` : '—'}</td>
+                    <td className="operator__notes" title={ship.notes || ''}>{ship.notes || '—'}</td>
                   </tr>
                 ))}
               </tbody>

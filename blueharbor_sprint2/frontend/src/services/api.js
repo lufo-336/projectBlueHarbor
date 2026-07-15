@@ -74,7 +74,7 @@ export const api = {
 
   // --- Navi (Operatore) ---
   getShips: () => request('/api/ships'),
-  createShip: (name) => request('/api/ships', { method: 'POST', body: { name } }),
+  createShip: (name, notes) => request('/api/ships', { method: 'POST', body: { name, notes } }),
 
   // --- Scheduler ---
   getSchedulerDashboard: () => request('/api/scheduler/dashboard'),

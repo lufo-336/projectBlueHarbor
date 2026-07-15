@@ -51,11 +51,20 @@ public class ShipsController : ControllerBase
     [Authorize(Roles = "Operator")]
     public async Task<IActionResult> CreateShip([FromBody] CreateShipRequest request)
     {
-        // --- Validazione input: il nome è l'unico dato inserito dall'utente ---
+        // --- Validazione input: nome obbligatorio, nota opzionale ---
         if (string.IsNullOrWhiteSpace(request.Name))
         {
             return Problem(
                 detail: "Il nome della nave non può essere vuoto.",
+                statusCode: StatusCodes.Status400BadRequest);
+        }
+
+        // La nota è facoltativa (es. carico, priorità): stringa vuota -> NULL.
+        var notes = string.IsNullOrWhiteSpace(request.Notes) ? null : request.Notes.Trim();
+        if (notes is { Length: > 255 })
+        {
+            return Problem(
+                detail: "La nota non può superare i 255 caratteri.",
                 statusCode: StatusCodes.Status400BadRequest);
         }
 
@@ -72,6 +81,7 @@ public class ShipsController : ControllerBase
 
         // --- Delego la composizione della nave (size/arrivo/durata casuali) al servizio dedicato ---
         var ship = _generator.GenerateShip(request.Name, currentDay);
+        ship.Notes = notes;
 
         // --- Salvo e rispondo 201 Created ---
         _context.Ships.Add(ship);
