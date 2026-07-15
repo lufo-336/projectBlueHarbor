@@ -1,0 +1,54 @@
+/* Reset minimo + regole condivise. Gli stili specifici stanno nei .css dei componenti. */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2 { margin-top: 0; }
+
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+/* --- Layout dell'app autenticata --- */
+.app-shell { min-height: 100svh; display: flex; flex-direction: column; }
+.app-main  { flex: 1; width: min(1200px, 100% - 3rem); margin: 1.5rem auto; }
+
+/* --- Bottoni --- */
+.btn {
+  font: inherit; cursor: pointer; border: 1px solid transparent;
+  border-radius: var(--radius-md); padding: 0.5rem 1rem; font-weight: 600;
+  transition: filter 120ms ease, opacity 120ms ease;
+}
+.btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.btn:not(:disabled):hover { filter: brightness(1.08); }
+.btn-primary { background: var(--cobalt-light); color: #fff; }
+.btn-gold    { background: var(--sahara); color: var(--cobalt); }
+.btn-ghost   { background: transparent; color: inherit; border-color: var(--border); }
+
+/* --- Campi di input --- */
+.field { display: flex; flex-direction: column; gap: 0.3rem; }
+.field label { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); }
+.field input {
+  font: inherit; color: var(--text); background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--radius-md);
+  padding: 0.55rem 0.75rem;
+}
+.field input:focus { outline: 2px solid var(--sahara); outline-offset: 1px; }
+
+/* --- Card e badge --- */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: 1.25rem;
+}
+.badge {
+  display: inline-block; padding: 0.15rem 0.6rem; border-radius: 999px;
+  font-size: 0.78rem; font-weight: 700;
+}
+.badge-pending  { color: var(--amber); background: var(--amber-bg); }
+.badge-assigned { color: var(--green); background: var(--green-bg); }
+.badge-departed { color: var(--text-muted); background: var(--surface-2); }
+.badge-size     { color: var(--text); background: var(--sahara-pale); border: 1px solid var(--sahara-border); font-family: var(--font-mono); }
