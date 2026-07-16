@@ -587,7 +587,7 @@
 
     <section id="dati">
       <div class="section-head"><span class="section-num">05</span><h2>Modello dati</h2></div>
-      <p>Quattro tabelle. <code>Ships</code> è il cuore del sistema; <code>Settings</code> è una tabella chiave-valore usata solo per il giorno virtuale.</p>
+      <p>Cinque tabelle. <code>Ships</code> è il cuore del sistema; <code>Settings</code> è una tabella chiave-valore usata solo per il giorno virtuale; <code>AssignmentHistory</code> è lo storico append-only degli eventi di assegnazione e partenza.</p>
       <div class="tablewrap">
         <table>
           <thead><tr><th>Tabella</th><th>Colonne rilevanti</th><th>Vincoli</th></tr></thead>
@@ -596,6 +596,7 @@
             <tr><td><code>Ships</code></td><td>Id, Name, Size, ArrivalDay, Duration, Status, BerthId (FK, null), OccupationStartDay (null), Notes</td><td>Size ∈ {XL,L,M,S} · Status ∈ {Pending,Assigned,Departed} · ArrivalDay ≥ 0 · 3 ≤ Duration ≤ 15 · FK_Ships_Berths</td></tr>
             <tr><td><code>Settings</code></td><td>Key (PK), Value</td><td>Riga unica in uso: <code>CurrentVirtualDay</code></td></tr>
             <tr><td><code>Users</code></td><td>Id, Username, PasswordHash, Role</td><td>Username univoco · Role ∈ {Operator,Scheduler}</td></tr>
+            <tr><td><code>AssignmentHistory</code></td><td>Id, ShipId, ShipName, Size, BerthId, BerthName, OccupationStartDay, OccupationEndDay, EventType, EventDay, CreatedAt</td><td>Append-only (niente update/delete) · EventType ∈ {Assigned,Departed} · snapshot denormalizzati (nome nave/banchina) · <code>database/script6.sql</code></td></tr>
           </tbody>
         </table>
       </div>
@@ -667,11 +668,14 @@
             <tr><td><code>GET</code></td><td><code>/api/auth/me</code></td><td>pubblico</td><td>Verifica la sessione all'avvio dell'app</td></tr>
             <tr><td><code>POST</code></td><td><code>/api/auth/logout</code></td><td>pubblico</td><td>Simbolico: col JWT stateless, il client scarta solo il token</td></tr>
             <tr><td><code>GET</code></td><td><code>/api/system/current-day</code></td><td>autenticato</td><td>Giorno virtuale corrente</td></tr>
-            <tr><td><code>GET</code></td><td><code>/api/ships</code></td><td>Operatore</td><td>Elenco navi, ordinate per Id</td></tr>
+            <tr><td><code>GET</code></td><td><code>/api/ships</code></td><td>Operatore</td><td>Elenco navi paginato e filtrabile (<code>?status=&amp;size=&amp;page=&amp;pageSize=</code>), ordine per Id; risposta con <code>items</code>, meta di pagina e <code>counts</code> per stato</td></tr>
             <tr><td><code>POST</code></td><td><code>/api/ships</code></td><td>Operatore</td><td>Crea nave: nome (obbligatorio) e nota (facoltativa, ≤255) sono manuali, il resto è generato</td></tr>
+            <tr><td><code>DELETE</code></td><td><code>/api/ships/{id}</code></td><td>Operatore</td><td>Annulla una nave <strong>solo se Pending</strong> (hard delete); se già Assigned/Departed → 409</td></tr>
             <tr><td><code>GET</code></td><td><code>/api/scheduler/dashboard</code></td><td>Scheduler</td><td>Navi Pending + stato di tutte le banchine in un'unica risposta</td></tr>
-            <tr><td><code>POST</code></td><td><code>/api/ships/{id}/assign</code></td><td>Scheduler</td><td>Assegna a una banchina: valida size, calcola il primo slot libero</td></tr>
-            <tr><td><code>POST</code></td><td><code>/api/time/next-day</code></td><td>autenticato</td><td>Avanza il giorno virtuale, rilascia le navi concluse</td></tr>
+            <tr><td><code>POST</code></td><td><code>/api/ships/{id}/assign</code></td><td>Scheduler</td><td>Assegna a una banchina: valida size, calcola il primo slot libero, registra l'evento nello storico</td></tr>
+            <tr><td><code>GET</code></td><td><code>/api/history</code></td><td>Scheduler</td><td>Storico assegnazioni (sola lettura), filtri <code>?shipId=&amp;berthId=&amp;eventType=</code>, ordine per data desc</td></tr>
+            <tr><td><code>GET</code></td><td><code>/api/history/export</code></td><td>Scheduler</td><td>Stesso storico in CSV scaricabile (stessi filtri)</td></tr>
+            <tr><td><code>POST</code></td><td><code>/api/time/next-day</code></td><td>autenticato</td><td>Avanza il giorno virtuale, rilascia le navi concluse e registra gli eventi di partenza</td></tr>
           </tbody>
         </table>
       </div>
@@ -725,14 +729,14 @@
             <tr><td class="num">4</td><td>Next Day</td><td><span class="chip chip--good">fatto</span></td><td><span class="chip chip--good">fatto</span></td><td><span class="chip chip--good">fatto</span></td><td><span class="chip chip--bad">da fare</span></td></tr>
             <tr><td class="num">5</td><td>Robustezza + errori</td><td><span class="chip chip--good">fatto</span></td><td><span class="chip chip--good">fatto</span></td><td><span class="chip chip--good">fatto</span></td><td><span class="chip chip--bad">da fare</span></td></tr>
             <tr><td class="num">6</td><td>Login / sicurezza</td><td><span class="chip chip--bad">da fare</span></td><td><span class="chip chip--warn">parziale</span></td><td><span class="chip chip--good">fatto</span></td><td><span class="chip chip--bad">da fare</span></td></tr>
-            <tr><td class="num">7</td><td>Validazione / paginazione</td><td>—</td><td><span class="chip chip--bad">da fare</span></td><td><span class="chip chip--bad">da fare</span></td><td><span class="chip chip--bad">da fare</span></td></tr>
-            <tr><td class="num">8</td><td>Storico (audit)</td><td><span class="chip chip--bad">da fare</span></td><td><span class="chip chip--bad">da fare</span></td><td><span class="chip chip--bad">da fare</span></td><td><span class="chip chip--bad">da fare</span></td></tr>
+            <tr><td class="num">7</td><td>Validazione / paginazione</td><td>—</td><td><span class="chip chip--good">fatto</span></td><td><span class="chip chip--good">fatto</span></td><td><span class="chip chip--warn">parziale</span></td></tr>
+            <tr><td class="num">8</td><td>Storico (audit)</td><td><span class="chip chip--good">fatto</span></td><td><span class="chip chip--good">fatto</span></td><td><span class="chip chip--good">fatto</span></td><td><span class="chip chip--good">fatto</span></td></tr>
             <tr><td class="num">9</td><td>Docker / deploy</td><td><span class="chip chip--bad">da fare</span></td><td><span class="chip chip--bad">da fare</span></td><td><span class="chip chip--bad">da fare</span></td><td><span class="chip chip--bad">da fare</span></td></tr>
-            <tr><td class="num">10</td><td>Accessibilità</td><td>—</td><td>—</td><td><span class="chip chip--bad">da fare</span></td><td><span class="chip chip--bad">da fare</span></td></tr>
+            <tr><td class="num">10</td><td>Accessibilità</td><td>—</td><td>—</td><td><span class="chip chip--warn">parziale</span></td><td><span class="chip chip--bad">da fare</span></td></tr>
           </tbody>
         </table>
       </div>
-      <p>Il cuore dell'applicazione (Sprint 1–5) è completo e funziona end-to-end — verificato girando l'app dal vivo, non solo leggendo il codice. Sprint 6 è quasi completo: login e <strong>protezione degli endpoint per ruolo</strong> (401/403) funzionano; resta la semplificazione dell'hashing SHA-256 senza salt e il seed utenti lato DB. Dallo Sprint 7 in poi il lavoro non è iniziato.</p>
+      <p>Il cuore dell'applicazione (Sprint 1–5) è completo e funziona end-to-end — verificato girando l'app dal vivo, non solo leggendo il codice. Sprint 6 è quasi completo: login e <strong>protezione degli endpoint per ruolo</strong> (401/403) funzionano; resta la semplificazione dell'hashing SHA-256 senza salt e il seed utenti lato DB. Sono state poi consegnate — sul branch <code>feature/ship-notes</code> — le evoluzioni degli Sprint 7 (nota facoltativa in creazione nave, paginazione/filtri e validazione su <code>GET /api/ships</code>, annullamento di una nave solo se Pending) e 8 (storico assegnazioni append-only con export CSV, tutto verificato dal vivo), più un primo passo dello Sprint 10 (timeline Scheduler più leggibile, stato libero/occupato distinguibile senza colore). Restano lo Sprint 9 (Docker) e il ruolo Admin di piattaforma.</p>
     </section>
 
     <section id="rischi">
@@ -762,10 +766,10 @@
         <table>
           <thead><tr><th>Sprint</th><th>Obiettivo</th></tr></thead>
           <tbody>
-            <tr><td class="num">7</td><td>Validazione input, paginazione/filtri su <code>GET /api/ships</code>, messaggi d'errore più specifici in UI</td></tr>
-            <tr><td class="num">8</td><td>Tabella <code>AssignmentHistory</code> (append-only), endpoint <code>GET /api/history</code>, sezione Storico nella vista Scheduler</td></tr>
+            <tr><td class="num">7</td><td>Validazione input, paginazione/filtri su <code>GET /api/ships</code>, messaggi d'errore più specifici in UI <span class="chip chip--good">consegnato</span></td></tr>
+            <tr><td class="num">8</td><td>Tabella <code>AssignmentHistory</code> (append-only), endpoint <code>GET /api/history</code> + export CSV, sezione Storico nella vista Scheduler <span class="chip chip--good">consegnato</span></td></tr>
             <tr><td class="num">9</td><td>SQL Server in container, Dockerfile per backend e frontend, un unico <code>docker-compose.yml</code></td></tr>
-            <tr><td class="num">10</td><td>Navigazione da tastiera, contrasto WCAG AA, audit Lighthouse/axe</td></tr>
+            <tr><td class="num">10</td><td>Navigazione da tastiera, contrasto WCAG AA, audit Lighthouse/axe <span class="chip chip--warn">avviato</span> (timeline leggibile senza colore)</td></tr>
           </tbody>
         </table>
       </div>
