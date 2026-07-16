@@ -69,6 +69,44 @@ async function request(path, { method = 'GET', body } = {}) {
   return response.json();
 }
 
+// Come request(), ma restituisce un Blob (per i download, es. export CSV).
+// Ripete la gestione di auth/401/errori perché il corpo NON è JSON.
+async function requestBlob(path) {
+  const headers = {};
+  const token = getToken();
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const response = await fetch(path, { headers });
+
+  if (response.status === 401) {
+    setToken(null);
+    if (onSessionExpired) onSessionExpired();
+    throw new ApiError('Sessione scaduta: effettua di nuovo il login.', 401);
+  }
+
+  if (!response.ok) {
+    let detail = `Errore ${response.status}`;
+    try {
+      const problem = await response.json();
+      if (problem && problem.detail) detail = problem.detail;
+    } catch {
+      // corpo non JSON: teniamo il messaggio generico
+    }
+    throw new ApiError(detail, response.status);
+  }
+
+  return response.blob();
+}
+
+// Costruisce una query string da un oggetto di parametri (salta vuoti/null).
+function toQuery(params) {
+  const qs = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null && value !== '') qs.append(key, value);
+  }
+  return qs.toString();
+}
+
 export const api = {
   // --- Autenticazione ---
   login: (email, password) => request('/api/auth/login', { method: 'POST', body: { email, password } }),
@@ -79,11 +117,7 @@ export const api = {
   // params opzionali: { status, size, page, pageSize } -> query string.
   // Risposta: { items, page, pageSize, total, totalPages, counts }.
   getShips: (params = {}) => {
-    const qs = new URLSearchParams();
-    for (const [key, value] of Object.entries(params)) {
-      if (value !== undefined && value !== null && value !== '') qs.append(key, value);
-    }
-    const query = qs.toString();
+    const query = toQuery(params);
     return request(query ? `/api/ships?${query}` : '/api/ships');
   },
   createShip: (name, notes) => request('/api/ships', { method: 'POST', body: { name, notes } }),
@@ -96,12 +130,13 @@ export const api = {
   // --- Storico assegnazioni (sola lettura) ---
   // params opzionali: { shipId, berthId, eventType }.
   getHistory: (params = {}) => {
-    const qs = new URLSearchParams();
-    for (const [key, value] of Object.entries(params)) {
-      if (value !== undefined && value !== null && value !== '') qs.append(key, value);
-    }
-    const query = qs.toString();
+    const query = toQuery(params);
     return request(query ? `/api/history?${query}` : '/api/history');
+  },
+  // Stessi filtri di getHistory, ma scarica un Blob CSV.
+  exportHistoryCsv: (params = {}) => {
+    const query = toQuery(params);
+    return requestBlob(query ? `/api/history/export?${query}` : '/api/history/export');
   },
 
   // --- Tempo virtuale ---

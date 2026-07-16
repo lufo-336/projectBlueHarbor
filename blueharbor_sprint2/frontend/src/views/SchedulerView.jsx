@@ -20,6 +20,7 @@ export default function SchedulerView() {
   const [assigning, setAssigning] = useState(false);
   const [history, setHistory] = useState(null); // storico assegnazioni (sola lettura)
   const [eventFilter, setEventFilter] = useState('');
+  const [exporting, setExporting] = useState(false);
 
   const loadDashboard = useCallback(async () => {
     try {
@@ -55,6 +56,26 @@ export default function SchedulerView() {
       showError(err.message);
     } finally {
       setAssigning(false);
+    }
+  }
+
+  // Esporta lo storico (con i filtri attivi) come CSV scaricabile.
+  async function handleExport() {
+    setExporting(true);
+    try {
+      const blob = await api.exportHistoryCsv({ eventType: eventFilter });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'storico.csv';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      showError(err.message);
+    } finally {
+      setExporting(false);
     }
   }
 
@@ -180,14 +201,21 @@ export default function SchedulerView() {
       <section className="card scheduler__history">
         <div className="scheduler__history-head">
           <h2>Storico assegnazioni</h2>
-          <label className="field field--inline">
-            <span>Evento</span>
-            <select value={eventFilter} onChange={(e) => setEventFilter(e.target.value)}>
-              <option value="">Tutti</option>
-              <option value="Assigned">Assegnazioni</option>
-              <option value="Departed">Partenze</option>
-            </select>
-          </label>
+          <div className="scheduler__history-tools">
+            <label className="field field--inline">
+              <span>Evento</span>
+              <select value={eventFilter} onChange={(e) => setEventFilter(e.target.value)}>
+                <option value="">Tutti</option>
+                <option value="Assigned">Assegnazioni</option>
+                <option value="Departed">Partenze</option>
+              </select>
+            </label>
+            <button type="button" className="btn btn-ghost btn-sm"
+                    disabled={exporting || !history || history.length === 0}
+                    onClick={handleExport}>
+              {exporting ? 'Esporto…' : 'Esporta CSV'}
+            </button>
+          </div>
         </div>
 
         {history === null ? (
