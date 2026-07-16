@@ -28,6 +28,9 @@ h1, h2 { margin-top: 0; }
 .btn-primary { background: var(--cobalt-light); color: #fff; }
 .btn-gold    { background: var(--sahara); color: var(--cobalt); }
 .btn-ghost   { background: transparent; color: inherit; border-color: var(--border); }
+.btn-danger  { background: transparent; color: var(--red); border-color: var(--red); }
+.btn-danger:not(:disabled):hover { background: var(--red-bg); filter: none; }
+.btn-sm      { padding: 0.3rem 0.7rem; font-size: 0.82rem; }
 
 /* --- Campi di input --- */
 .field { display: flex; flex-direction: column; gap: 0.3rem; }

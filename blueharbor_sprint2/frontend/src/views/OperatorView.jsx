@@ -15,6 +15,7 @@ export default function OperatorView() {
   const [name, setName] = useState('');
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [cancellingId, setCancellingId] = useState(null); // id della nave in fase di annullamento
 
   // Filtri e paginazione (guidano la query verso il backend).
   const [statusFilter, setStatusFilter] = useState('');
@@ -60,6 +61,23 @@ export default function OperatorView() {
       showError(err.message);
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  // Annulla una nave: consentito solo finché è Pending (il backend lo impone con 409).
+  async function handleCancel(ship) {
+    if (!window.confirm(`Annullare la nave "${ship.name}"? L'operazione è definitiva.`)) return;
+    setCancellingId(ship.id);
+    try {
+      await api.cancelShip(ship.id);
+      showSuccess(`Nave "${ship.name}" annullata.`);
+      // Se era l'ultima riga della pagina, torna indietro di una pagina.
+      if (data.items.length === 1 && page > 1) setPage((p) => p - 1);
+      else await loadShips();
+    } catch (err) {
+      showError(err.message);
+    } finally {
+      setCancellingId(null);
     }
   }
 
@@ -144,7 +162,7 @@ export default function OperatorView() {
             <div className="operator__table-wrap">
               <table className="operator__table">
                 <thead>
-                  <tr><th>Nome</th><th>Taglia</th><th>Arrivo</th><th>Durata</th><th>Stato</th><th>Banchina</th><th>Note</th></tr>
+                  <tr><th>Nome</th><th>Taglia</th><th>Arrivo</th><th>Durata</th><th>Stato</th><th>Banchina</th><th>Note</th><th>Azioni</th></tr>
                 </thead>
                 <tbody>
                   {items.map((ship) => (
@@ -160,6 +178,17 @@ export default function OperatorView() {
                       </td>
                       <td className="mono">{ship.berthId ? `#${ship.berthId}` : '—'}</td>
                       <td className="operator__notes" title={ship.notes || ''}>{ship.notes || '—'}</td>
+                      <td>
+                        {ship.status === 'Pending' ? (
+                          <button type="button" className="btn btn-danger btn-sm"
+                                  disabled={cancellingId === ship.id}
+                                  onClick={() => handleCancel(ship)}>
+                            {cancellingId === ship.id ? 'Annullo…' : 'Annulla'}
+                          </button>
+                        ) : (
+                          <span className="operator__no-action">—</span>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

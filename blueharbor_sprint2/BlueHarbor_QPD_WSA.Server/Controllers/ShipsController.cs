@@ -164,6 +164,38 @@ public class ShipsController : ControllerBase
     }
 
     // ==========================================================================
+    //  DELETE /api/ships/{id} — annulla una nave registrata per errore (ruolo Operatore)
+    //  Consentito SOLO finché la nave è Pending: una volta assegnata entra nel ciclo
+    //  della banchina e la consegna vieta modifiche post-assegnazione. Hard delete
+    //  (la nave Pending non è mai entrata nel ciclo → il modello a 3 stati resta intatto).
+    // ==========================================================================
+    [HttpDelete("{id:int}")]
+    [Authorize(Roles = "Operator")]
+    public async Task<IActionResult> CancelShip(int id)
+    {
+        var ship = await _context.Ships.FindAsync(id);
+        if (ship is null)
+        {
+            return Problem(
+                detail: $"Nave con id {id} non trovata.",
+                statusCode: StatusCodes.Status404NotFound);
+        }
+
+        // Annullabile solo prima dell'assegnazione: dopo, la consegna vieta modifiche.
+        if (ship.Status != ShipStatus.Pending)
+        {
+            return Problem(
+                detail: $"La nave è annullabile solo in stato Pending (stato attuale: {ship.Status}).",
+                statusCode: StatusCodes.Status409Conflict);
+        }
+
+        _context.Ships.Remove(ship);
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
+
+    // ==========================================================================
     //  POST /api/ships/{id}/assign — assegna una nave a una banchina (ruolo Scheduler)
     // ==========================================================================
     /// <summary>

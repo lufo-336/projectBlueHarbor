@@ -63,6 +63,9 @@ async function request(path, { method = 'GET', body } = {}) {
     throw new ApiError(detail, response.status);
   }
 
+  // 204 No Content (es. DELETE): nessun corpo da leggere.
+  if (response.status === 204) return null;
+
   return response.json();
 }
 
@@ -84,6 +87,7 @@ export const api = {
     return request(query ? `/api/ships?${query}` : '/api/ships');
   },
   createShip: (name, notes) => request('/api/ships', { method: 'POST', body: { name, notes } }),
+  cancelShip: (shipId) => request(`/api/ships/${shipId}`, { method: 'DELETE' }),
 
   // --- Scheduler ---
   getSchedulerDashboard: () => request('/api/scheduler/dashboard'),

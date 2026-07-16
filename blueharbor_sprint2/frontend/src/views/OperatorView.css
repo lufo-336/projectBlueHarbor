@@ -28,6 +28,7 @@
   gap: 1rem; margin-top: 0.9rem; flex-wrap: wrap;
 }
 .operator__pager-info { color: var(--text-muted); font-size: 0.9rem; }
+.operator__no-action { color: var(--text-muted); }
 
 .operator__table-wrap { overflow-x: auto; }
 .operator__table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
