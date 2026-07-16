@@ -117,7 +117,14 @@ export default function SchedulerView() {
 
       {/* ---- Timeline: banchine per riga, giorni per colonna (passo 2) ---- */}
       <section className="card scheduler__timeline">
-        <h2>Timeline banchine</h2>
+        <div className="scheduler__timeline-head">
+          <h2>Timeline banchine</h2>
+          <ul className="timeline-legend">
+            <li><span className="lg lg--occupied" aria-hidden="true" />Occupazione</li>
+            <li><span className="lg lg--preview" aria-hidden="true" />Anteprima accodamento</li>
+            <li><span className="lg lg--today" aria-hidden="true" />Oggi</li>
+          </ul>
+        </div>
         <div className="timeline-scroll">
           <div className="timeline">
             {/* Intestazione coi numeri dei giorni */}
@@ -127,6 +134,7 @@ export default function SchedulerView() {
                 <div key={day} className={`timeline__head mono ${i === 0 ? 'is-today' : ''}`}
                      style={{ gridColumn: i + 2 }}>
                   g{day}
+                  {i === 0 && <span className="timeline__today-tag">oggi</span>}
                 </div>
               ))}
             </div>
@@ -147,6 +155,10 @@ export default function SchedulerView() {
                   <div className="timeline__label">
                     <span className="timeline__berth">{berth.name}</span>
                     <span className="badge badge-size">{berth.size}</span>
+                    <span className={`berth-status ${berth.isOccupiedNow ? 'is-occupied' : 'is-free'}`}>
+                      <span className="berth-status__dot" aria-hidden="true" />
+                      {berth.isOccupiedNow ? 'Occupata' : 'Libera'}
+                    </span>
                     {compatible && (
                       <button className="btn btn-gold timeline__assign" disabled={assigning}
                               onClick={() => handleAssign(berth, selectedShip)}>
@@ -170,7 +182,8 @@ export default function SchedulerView() {
                     return (
                       <div key={a.shipId} className="timeline__block"
                            style={{ gridColumn: `${start - day0 + 2} / ${end - day0 + 2}` }}
-                           title={`${a.shipName}: giorni ${a.startDay}–${a.endDay - 1}`}>
+                           title={`${a.shipName}: giorni ${a.startDay}–${a.endDay - 1}`}
+                           aria-label={`${berth.name} occupata da ${a.shipName}, giorni ${a.startDay}–${a.endDay - 1}`}>
                         {a.shipName}
                       </div>
                     );
