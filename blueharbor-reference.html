@@ -743,12 +743,12 @@
             <tr><td class="num">6</td><td>Login / sicurezza</td><td><span class="chip chip--bad">da fare</span></td><td><span class="chip chip--warn">parziale</span></td><td><span class="chip chip--good">fatto</span></td><td><span class="chip chip--bad">da fare</span></td></tr>
             <tr><td class="num">7</td><td>Validazione / paginazione</td><td>—</td><td><span class="chip chip--good">fatto</span></td><td><span class="chip chip--good">fatto</span></td><td><span class="chip chip--warn">parziale</span></td></tr>
             <tr><td class="num">8</td><td>Storico (audit)</td><td><span class="chip chip--good">fatto</span></td><td><span class="chip chip--good">fatto</span></td><td><span class="chip chip--good">fatto</span></td><td><span class="chip chip--good">fatto</span></td></tr>
-            <tr><td class="num">9</td><td>Docker / deploy</td><td><span class="chip chip--bad">da fare</span></td><td><span class="chip chip--bad">da fare</span></td><td><span class="chip chip--bad">da fare</span></td><td><span class="chip chip--bad">da fare</span></td></tr>
+            <tr><td class="num">9</td><td>Docker / deploy</td><td><span class="chip chip--good">fatto</span></td><td><span class="chip chip--good">fatto</span></td><td><span class="chip chip--good">fatto</span></td><td><span class="chip chip--good">fatto</span></td></tr>
             <tr><td class="num">10</td><td>Accessibilità</td><td>—</td><td>—</td><td><span class="chip chip--warn">parziale</span></td><td><span class="chip chip--bad">da fare</span></td></tr>
           </tbody>
         </table>
       </div>
-      <p>Il cuore dell'applicazione (Sprint 1–5) è completo e funziona end-to-end — verificato girando l'app dal vivo, non solo leggendo il codice. Sprint 6 è quasi completo: login e <strong>protezione degli endpoint per ruolo</strong> (401/403) funzionano; resta la semplificazione dell'hashing SHA-256 senza salt e il seed utenti lato DB. Sono state poi consegnate — sul branch <code>feature/ship-notes</code> — le evoluzioni degli Sprint 7 (nota facoltativa in creazione nave, paginazione/filtri e validazione su <code>GET /api/ships</code>, annullamento di una nave solo se Pending) e 8 (storico assegnazioni append-only con export CSV, tutto verificato dal vivo), più un primo passo dello Sprint 10 (timeline Scheduler più leggibile, stato libero/occupato distinguibile senza colore). Restano lo Sprint 9 (Docker) e il ruolo Admin di piattaforma.</p>
+      <p>Il cuore dell'applicazione (Sprint 1–5) è completo e funziona end-to-end — verificato girando l'app dal vivo, non solo leggendo il codice. Sprint 6 è quasi completo: login e <strong>protezione degli endpoint per ruolo</strong> (401/403) funzionano; resta la semplificazione dell'hashing SHA-256 senza salt e il seed utenti lato DB. Sono state poi consegnate — sul branch <code>feature/ship-notes</code> — le evoluzioni degli Sprint 7 (nota facoltativa in creazione nave, paginazione/filtri e validazione su <code>GET /api/ships</code>, annullamento di una nave solo se Pending) e 8 (storico assegnazioni append-only con export CSV, tutto verificato dal vivo), più un primo passo dello Sprint 10 (timeline Scheduler più leggibile, stato libero/occupato distinguibile senza colore), lo Sprint 9 (packaging Docker: <code>docker compose up --build</code> avvia DB + app su una macchina pulita) e il ruolo <strong>Admin</strong> di piattaforma (gestione utenti + capacità di Operatore e Scheduler). Resta aperta solo la rifinitura finale dell'accessibilità (Sprint 10).</p>
     </section>
 
     <section id="rischi">
@@ -780,7 +780,7 @@
           <tbody>
             <tr><td class="num">7</td><td>Validazione input, paginazione/filtri su <code>GET /api/ships</code>, messaggi d'errore più specifici in UI <span class="chip chip--good">consegnato</span></td></tr>
             <tr><td class="num">8</td><td>Tabella <code>AssignmentHistory</code> (append-only), endpoint <code>GET /api/history</code> + export CSV, sezione Storico nella vista Scheduler <span class="chip chip--good">consegnato</span></td></tr>
-            <tr><td class="num">9</td><td>SQL Server in container, Dockerfile per backend e frontend, un unico <code>docker-compose.yml</code></td></tr>
+            <tr><td class="num">9</td><td>SQL Server in container, Dockerfile per backend e frontend, un unico <code>docker-compose.yml</code> <span class="chip chip--good">consegnato</span></td></tr>
             <tr><td class="num">10</td><td>Navigazione da tastiera, contrasto WCAG AA, audit Lighthouse/axe <span class="chip chip--warn">avviato</span> (timeline leggibile senza colore)</td></tr>
           </tbody>
         </table>
@@ -810,7 +810,13 @@
         </div>
       </div>
 
-      <h3>Avvio (se i server non sono già attivi)</h3>
+      <h3>Avvio — opzione A: un solo comando (Docker)</h3>
+      <pre><code>cd blueharbor_sprint2
+docker compose up --build     # DB + app su http://localhost:8080
+# per azzerare tutto: docker compose down -v</code></pre>
+      <p style="font-size:0.8125rem; color:var(--muted);">L'app si auto-inizializza (schema + seed di banchine, giorno virtuale e utenti demo): non serve applicare a mano gli script SQL.</p>
+
+      <h3>Avvio — opzione B: server locali (sviluppo)</h3>
       <pre><code>cd blueharbor_sprint2/BlueHarbor_QPD_WSA.Server
 dotnet run --launch-profile https   # API su https://localhost:7008
 
