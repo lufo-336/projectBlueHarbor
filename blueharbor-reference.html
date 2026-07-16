@@ -595,7 +595,7 @@
             <tr><td><code>Berths</code></td><td>Id, Name, Size</td><td>Size ∈ {XL,L,M,S} · Name univoco · 8 righe fisse, seeding una tantum</td></tr>
             <tr><td><code>Ships</code></td><td>Id, Name, Size, ArrivalDay, Duration, Status, BerthId (FK, null), OccupationStartDay (null), Notes</td><td>Size ∈ {XL,L,M,S} · Status ∈ {Pending,Assigned,Departed} · ArrivalDay ≥ 0 · 3 ≤ Duration ≤ 15 · FK_Ships_Berths</td></tr>
             <tr><td><code>Settings</code></td><td>Key (PK), Value</td><td>Riga unica in uso: <code>CurrentVirtualDay</code></td></tr>
-            <tr><td><code>Users</code></td><td>Id, Username, PasswordHash, Role</td><td>Username univoco · Role ∈ {Operator,Scheduler}</td></tr>
+            <tr><td><code>Users</code></td><td>Id, Username, PasswordHash, Role, IsActive</td><td>Username univoco · Role ∈ {Operator,Scheduler,Admin} · IsActive (disattivato = niente login) · <code>database/script7.sql</code></td></tr>
             <tr><td><code>AssignmentHistory</code></td><td>Id, ShipId, ShipName, Size, BerthId, BerthName, OccupationStartDay, OccupationEndDay, EventType, EventDay, CreatedAt</td><td>Append-only (niente update/delete) · EventType ∈ {Assigned,Departed} · snapshot denormalizzati (nome nave/banchina) · <code>database/script6.sql</code></td></tr>
           </tbody>
         </table>
@@ -675,6 +675,10 @@
             <tr><td><code>POST</code></td><td><code>/api/ships/{id}/assign</code></td><td>Scheduler</td><td>Assegna a una banchina: valida size, calcola il primo slot libero, registra l'evento nello storico</td></tr>
             <tr><td><code>GET</code></td><td><code>/api/history</code></td><td>Scheduler</td><td>Storico assegnazioni (sola lettura), filtri <code>?shipId=&amp;berthId=&amp;eventType=</code>, ordine per data desc</td></tr>
             <tr><td><code>GET</code></td><td><code>/api/history/export</code></td><td>Scheduler</td><td>Stesso storico in CSV scaricabile (stessi filtri)</td></tr>
+            <tr><td><code>GET</code></td><td><code>/api/admin/users</code></td><td>Admin</td><td>Elenco utenti (senza hash password)</td></tr>
+            <tr><td><code>POST</code></td><td><code>/api/admin/users</code></td><td>Admin</td><td>Crea utente (username, ruolo, password iniziale)</td></tr>
+            <tr><td><code>PUT</code></td><td><code>/api/admin/users/{id}</code></td><td>Admin</td><td>Cambia ruolo / (dis)attiva / reset password; guardrail anti auto-lockout e ultimo Admin</td></tr>
+            <tr><td><code>DELETE</code></td><td><code>/api/admin/users/{id}</code></td><td>Admin</td><td>Disattiva l'utente (soft delete)</td></tr>
             <tr><td><code>POST</code></td><td><code>/api/time/next-day</code></td><td>autenticato</td><td>Avanza il giorno virtuale, rilascia le navi concluse e registra gli eventi di partenza</td></tr>
           </tbody>
         </table>
@@ -688,6 +692,14 @@
           <code>/api/system/current-day</code> → 401 senza login), e con il ruolo sbagliato
           <strong>403</strong>. Pubblico resta solo <code>/api/auth/*</code>. L'unica
           semplificazione dichiaratamente didattica è l'hashing SHA-256 senza salt.
+        </p>
+        <p>
+          Il ruolo <strong>Admin</strong> è di piattaforma: ha l'unione delle capacità di
+          Operatore e Scheduler (gli endpoint sopra accettano anche <code>Admin</code>) più la
+          gestione utenti (<code>/api/admin/*</code>). Non ottiene poteri di dominio vietati —
+          nessuna riassegnazione, nessun bypass delle regole, nessuna modifica del set di banchine:
+          azioni che non esistono per nessun ruolo. Un utente con <code>IsActive = false</code> non
+          può effettuare il login (403).
         </p>
       </div>
     </section>
@@ -790,6 +802,11 @@
           <div class="creds__role">Scheduler</div>
           <code>scheduler@blueharbor</code>
           <code>scheduler123</code>
+        </div>
+        <div class="creds__card">
+          <div class="creds__role">Admin</div>
+          <code>admin@blueharbor</code>
+          <code>admin123</code>
         </div>
       </div>
 
