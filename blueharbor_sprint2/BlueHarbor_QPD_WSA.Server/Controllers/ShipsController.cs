@@ -29,18 +29,91 @@ public class ShipsController : ControllerBase
         _generator = generator;
     }
 
+    // Taglie ammesse per il filtro ?size= (le stesse usate in generazione nave).
+    private static readonly string[] ValidSizes = { "S", "M", "L", "XL" };
+
     // ==========================================================================
-    //  GET /api/ships — elenco di tutte le navi (ordinate per Id)
+    //  GET /api/ships — elenco paginato e filtrabile delle navi
+    //  Query param opzionali:
+    //    ?status=Pending|Assigned|Departed   filtra per stato
+    //    ?size=S|M|L|XL                        filtra per taglia
+    //    ?page=1 (>=1)                          pagina (default 1)
+    //    ?pageSize=20 (1..100)                  ampiezza pagina (default 20)
+    //  Ordinamento stabile per Id. Risposta: ShipPageResponse (items + meta + counts).
     // ==========================================================================
     [HttpGet]
     [Authorize(Roles = "Operator")]
-    public async Task<IActionResult> GetShips()
+    public async Task<IActionResult> GetShips(
+        [FromQuery] string? status = null,
+        [FromQuery] string? size = null,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20)
     {
-        var ships = await _context.Ships
+        // --- Validazione paginazione ---
+        if (page < 1)
+        {
+            return Problem(
+                detail: "Il parametro 'page' deve essere >= 1.",
+                statusCode: StatusCodes.Status400BadRequest);
+        }
+        if (pageSize is < 1 or > 100)
+        {
+            return Problem(
+                detail: "Il parametro 'pageSize' deve essere compreso tra 1 e 100.",
+                statusCode: StatusCodes.Status400BadRequest);
+        }
+
+        // --- Validazione filtro stato (enum) ---
+        ShipStatus? statusFilter = null;
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            if (!Enum.TryParse<ShipStatus>(status, ignoreCase: true, out var parsed))
+            {
+                return Problem(
+                    detail: $"Stato '{status}' non valido. Ammessi: Pending, Assigned, Departed.",
+                    statusCode: StatusCodes.Status400BadRequest);
+            }
+            statusFilter = parsed;
+        }
+
+        // --- Validazione filtro taglia ---
+        string? sizeFilter = null;
+        if (!string.IsNullOrWhiteSpace(size))
+        {
+            var normalized = size.Trim().ToUpperInvariant();
+            if (!ValidSizes.Contains(normalized))
+            {
+                return Problem(
+                    detail: $"Taglia '{size}' non valida. Ammesse: S, M, L, XL.",
+                    statusCode: StatusCodes.Status400BadRequest);
+            }
+            sizeFilter = normalized;
+        }
+
+        // --- Contatori sull'intero insieme (indipendenti da filtri e paginazione) ---
+        var counts = new ShipStatusCounts(
+            Pending: await _context.Ships.CountAsync(s => s.Status == ShipStatus.Pending),
+            Assigned: await _context.Ships.CountAsync(s => s.Status == ShipStatus.Assigned),
+            Departed: await _context.Ships.CountAsync(s => s.Status == ShipStatus.Departed));
+
+        // --- Query filtrata: i filtri si applicano prima di Skip/Take (lato SQL) ---
+        var query = _context.Ships.AsQueryable();
+        if (statusFilter is not null) query = query.Where(s => s.Status == statusFilter);
+        if (sizeFilter is not null) query = query.Where(s => s.Size == sizeFilter);
+
+        var total = await query.CountAsync();
+        var totalPages = total == 0 ? 0 : (int)Math.Ceiling(total / (double)pageSize);
+
+        var items = await query
             .OrderBy(s => s.Id)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(s => new ShipDto(
+                s.Id, s.Name, s.Size, s.ArrivalDay, s.Duration,
+                s.Status.ToString(), s.BerthId, s.OccupationStartDay, s.Notes))
             .ToListAsync();
 
-        return Ok(ships);
+        return Ok(new ShipPageResponse(items, page, pageSize, total, totalPages, counts));
     }
 
     // ==========================================================================

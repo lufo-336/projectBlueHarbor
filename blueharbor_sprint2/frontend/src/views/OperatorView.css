@@ -12,6 +12,23 @@
 .operator__form textarea { resize: vertical; font: inherit; }
 .field__optional { color: var(--text-muted); font-weight: 400; font-size: 0.85em; }
 
+.operator__list-head {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 1rem; flex-wrap: wrap; margin-bottom: 0.5rem;
+}
+.operator__filters { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+.field--inline {
+  display: flex; align-items: center; gap: 0.4rem;
+  color: var(--text-muted); font-size: 0.85rem;
+}
+.field--inline select { font: inherit; padding: 0.3rem 0.5rem; }
+
+.operator__pager {
+  display: flex; align-items: center; justify-content: center;
+  gap: 1rem; margin-top: 0.9rem; flex-wrap: wrap;
+}
+.operator__pager-info { color: var(--text-muted); font-size: 0.9rem; }
+
 .operator__table-wrap { overflow-x: auto; }
 .operator__table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
 .operator__table th, .operator__table td {

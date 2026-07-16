@@ -73,7 +73,16 @@ export const api = {
   logout: () => request('/api/auth/logout', { method: 'POST' }),
 
   // --- Navi (Operatore) ---
-  getShips: () => request('/api/ships'),
+  // params opzionali: { status, size, page, pageSize } -> query string.
+  // Risposta: { items, page, pageSize, total, totalPages, counts }.
+  getShips: (params = {}) => {
+    const qs = new URLSearchParams();
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined && value !== null && value !== '') qs.append(key, value);
+    }
+    const query = qs.toString();
+    return request(query ? `/api/ships?${query}` : '/api/ships');
+  },
   createShip: (name, notes) => request('/api/ships', { method: 'POST', body: { name, notes } }),
 
   // --- Scheduler ---
