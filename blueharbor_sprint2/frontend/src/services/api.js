@@ -142,4 +142,13 @@ export const api = {
   // --- Tempo virtuale ---
   getCurrentDay: () => request('/api/system/current-day'),
   nextDay: () => request('/api/time/next-day', { method: 'POST' }),
+
+  // --- Gestione accessi (ruolo Admin) ---
+  adminListUsers: () => request('/api/admin/users'),
+  adminCreateUser: (username, role, password) =>
+    request('/api/admin/users', { method: 'POST', body: { username, role, password } }),
+  // changes: sottoinsieme di { role, isActive, password }.
+  adminUpdateUser: (id, changes) =>
+    request(`/api/admin/users/${id}`, { method: 'PUT', body: changes }),
+  adminDeactivateUser: (id) => request(`/api/admin/users/${id}`, { method: 'DELETE' }),
 };
