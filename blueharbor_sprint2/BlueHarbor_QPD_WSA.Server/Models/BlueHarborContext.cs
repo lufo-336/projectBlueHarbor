@@ -24,6 +24,8 @@ public class BlueHarborContext : DbContext
 
     public DbSet<User> Users => Set<User>();
 
+    public DbSet<AssignmentHistory> AssignmentHistory => Set<AssignmentHistory>();
+
     // ==========================================================================
     //  Configurazione del modello (vincoli, lunghezze, relazioni)
     // ==========================================================================
@@ -87,6 +89,24 @@ public class BlueHarborContext : DbContext
             entity.Property(e => e.Username).HasMaxLength(50).IsUnicode(false);
             entity.Property(e => e.PasswordHash).HasMaxLength(255).IsUnicode(false);
             entity.Property(e => e.Role).HasMaxLength(20).IsUnicode(false);
+        });
+
+        // ---------- AssignmentHistory: storico append-only, snapshot denormalizzati ----------
+        modelBuilder.Entity<AssignmentHistory>(entity =>
+        {
+            entity.ToTable("AssignmentHistory", t =>
+                t.HasCheckConstraint("CK_AssignmentHistory_EventType",
+                    "[EventType] IN ('Assigned','Departed')"));
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.ShipName).HasMaxLength(100).IsUnicode(false);
+            entity.Property(e => e.Size).HasMaxLength(2).IsUnicode(false);
+            entity.Property(e => e.BerthName).HasMaxLength(50).IsUnicode(false);
+            entity.Property(e => e.EventType)
+                .HasConversion<string>()
+                .HasMaxLength(10)
+                .IsUnicode(false);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
         });
     }
 }

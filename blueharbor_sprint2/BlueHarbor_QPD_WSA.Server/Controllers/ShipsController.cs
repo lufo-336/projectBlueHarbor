@@ -273,6 +273,21 @@ public class ShipsController : ControllerBase
         ship.OccupationStartDay = startDay;
         ship.Status = ShipStatus.Assigned;
 
+        // --- 7b) Storico (#1): riga append-only 'Assigned'. Stesso SaveChanges =
+        //         stessa transazione dell'assegnazione, quindi atomico. ---
+        _context.AssignmentHistory.Add(new AssignmentHistory
+        {
+            ShipId = ship.Id,
+            ShipName = ship.Name,
+            Size = ship.Size,
+            BerthId = berth.Id,
+            BerthName = berth.Name,
+            OccupationStartDay = startDay,
+            OccupationEndDay = startDay + ship.Duration,
+            EventType = HistoryEventType.Assigned,
+            EventDay = currentDay,
+        });
+
         await _context.SaveChangesAsync();
 
         // --- 8) Rispondo con una DTO (non l'entità, per evitare i cicli di navigazione EF -> 500) ---

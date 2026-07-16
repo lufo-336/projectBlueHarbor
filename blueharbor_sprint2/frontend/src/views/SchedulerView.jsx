@@ -10,12 +10,16 @@ import './SchedulerView.css';
 // NB: deve combaciare con repeat(14, ...) in SchedulerView.css.
 const TIMELINE_DAYS = 14;
 
+const EVENT_LABELS = { Assigned: 'Assegnata', Departed: 'Partita' };
+
 export default function SchedulerView() {
   const { currentDay } = useDay();
   const { showSuccess, showError } = useToast();
   const [dashboard, setDashboard] = useState(null); // null = primo caricamento
   const [selectedShipId, setSelectedShipId] = useState(null);
   const [assigning, setAssigning] = useState(false);
+  const [history, setHistory] = useState(null); // storico assegnazioni (sola lettura)
+  const [eventFilter, setEventFilter] = useState('');
 
   const loadDashboard = useCallback(async () => {
     try {
@@ -25,8 +29,18 @@ export default function SchedulerView() {
     }
   }, [showError]);
 
-  // Ricarica al mount e a ogni Next Day.
+  const loadHistory = useCallback(async () => {
+    try {
+      setHistory(await api.getHistory({ eventType: eventFilter }));
+    } catch (err) {
+      showError(err.message);
+      setHistory([]);
+    }
+  }, [showError, eventFilter]);
+
+  // Ricarica al mount, a ogni Next Day (nuove partenze) e dopo un'assegnazione.
   useEffect(() => { loadDashboard(); }, [loadDashboard, currentDay]);
+  useEffect(() => { loadHistory(); }, [loadHistory, currentDay]);
 
   async function handleAssign(berth, selectedShip) {
     if (!selectedShip || assigning) return;
@@ -36,7 +50,7 @@ export default function SchedulerView() {
       // Fa fede il giorno calcolato dal SERVER, non l'anteprima client.
       showSuccess(`${result.name} assegnata a ${berth.name}: occupazione dal giorno ${result.startDay}.`);
       setSelectedShipId(null);
-      await loadDashboard();
+      await Promise.all([loadDashboard(), loadHistory()]);
     } catch (err) {
       showError(err.message);
     } finally {
@@ -160,6 +174,57 @@ export default function SchedulerView() {
             })}
           </div>
         </div>
+      </section>
+
+      {/* ---- Storico assegnazioni (#1): sola lettura, append-only lato backend ---- */}
+      <section className="card scheduler__history">
+        <div className="scheduler__history-head">
+          <h2>Storico assegnazioni</h2>
+          <label className="field field--inline">
+            <span>Evento</span>
+            <select value={eventFilter} onChange={(e) => setEventFilter(e.target.value)}>
+              <option value="">Tutti</option>
+              <option value="Assigned">Assegnazioni</option>
+              <option value="Departed">Partenze</option>
+            </select>
+          </label>
+        </div>
+
+        {history === null ? (
+          <p className="scheduler__hint">Caricamento storico…</p>
+        ) : history.length === 0 ? (
+          <p className="scheduler__hint">
+            {eventFilter ? 'Nessun evento di questo tipo.' : 'Nessun evento registrato finora.'}
+          </p>
+        ) : (
+          <div className="scheduler__history-wrap">
+            <table className="scheduler__history-table">
+              <thead>
+                <tr>
+                  <th>Evento</th><th>Nave</th><th>Taglia</th><th>Banchina</th>
+                  <th>Occupazione</th><th>Giorno evento</th><th>Registrato</th>
+                </tr>
+              </thead>
+              <tbody>
+                {history.map((h) => (
+                  <tr key={h.id}>
+                    <td>
+                      <span className={`badge badge-${h.eventType.toLowerCase()}`}>
+                        {EVENT_LABELS[h.eventType]}
+                      </span>
+                    </td>
+                    <td>{h.shipName}</td>
+                    <td><span className="badge badge-size">{h.size}</span></td>
+                    <td>{h.berthName}</td>
+                    <td className="mono">g{h.occupationStartDay}–g{h.occupationEndDay - 1}</td>
+                    <td className="mono">g{h.eventDay}</td>
+                    <td className="mono">{new Date(h.createdAt).toLocaleString('it-IT')}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
     </div>
   );

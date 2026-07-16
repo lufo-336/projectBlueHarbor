@@ -44,6 +44,7 @@ public class TimeService
             // Lo stato passa a Departed; BerthId resta come storico (libera comunque
             // la banchina, perché l'accodamento considera solo le navi Assigned).
             var shipsToRelease = await _context.Ships
+                .Include(s => s.Berth) // serve il nome banchina per lo snapshot dello storico
                 .Where(s => s.Status == ShipStatus.Assigned
                             && s.OccupationStartDay != null
                             && s.OccupationStartDay + s.Duration <= newDay)
@@ -52,6 +53,20 @@ public class TimeService
             foreach (var ship in shipsToRelease)
             {
                 ship.Status = ShipStatus.Departed;
+
+                // Storico (#1): riga append-only 'Departed', nella stessa transazione.
+                _context.AssignmentHistory.Add(new AssignmentHistory
+                {
+                    ShipId = ship.Id,
+                    ShipName = ship.Name,
+                    Size = ship.Size,
+                    BerthId = ship.BerthId!.Value,
+                    BerthName = ship.Berth?.Name ?? string.Empty,
+                    OccupationStartDay = ship.OccupationStartDay!.Value,
+                    OccupationEndDay = ship.OccupationStartDay!.Value + ship.Duration,
+                    EventType = HistoryEventType.Departed,
+                    EventDay = newDay,
+                });
             }
 
             await _context.SaveChangesAsync();

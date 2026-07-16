@@ -93,6 +93,17 @@ export const api = {
   getSchedulerDashboard: () => request('/api/scheduler/dashboard'),
   assignShip: (shipId, berthId) => request(`/api/ships/${shipId}/assign`, { method: 'POST', body: { berthId } }),
 
+  // --- Storico assegnazioni (sola lettura) ---
+  // params opzionali: { shipId, berthId, eventType }.
+  getHistory: (params = {}) => {
+    const qs = new URLSearchParams();
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined && value !== null && value !== '') qs.append(key, value);
+    }
+    const query = qs.toString();
+    return request(query ? `/api/history?${query}` : '/api/history');
+  },
+
   // --- Tempo virtuale ---
   getCurrentDay: () => request('/api/system/current-day'),
   nextDay: () => request('/api/time/next-day', { method: 'POST' }),
