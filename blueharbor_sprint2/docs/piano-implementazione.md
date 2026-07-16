@@ -5,6 +5,13 @@
 > [`proposte-evoluzione.md`](proposte-evoluzione.md)). Sforzo: **S** ≈ ½ giornata · **M** ≈ 1–2
 > giornate · **L** ≈ 3+ giornate. Non è impegno di sprint: è la mappa tecnica.
 
+> **✅ Stato: tutte le 8 feature sono implementate** sul branch `feature/ship-notes`
+> (verificate dal vivo). Riepilogo: #1 Storico assegnazioni · #2 Paginazione/filtri ·
+> #3 Note nave · #4 Docker/compose · #5 Timeline Scheduler · #6 Annulla se Pending ·
+> #7 Export CSV · #8 Ruolo Admin. DB: `database/script6.sql` (storico) e
+> `database/script7.sql` (Admin/IsActive). Resta la rifinitura di accessibilità e la
+> verifica visiva delle UI nuove.
+
 ## Note trasversali (valgono per tutte)
 
 - **Niente migrazioni EF:** lo schema è gestito con script SQL versionati
