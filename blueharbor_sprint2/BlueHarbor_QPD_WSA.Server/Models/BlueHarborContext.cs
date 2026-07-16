@@ -82,13 +82,14 @@ public class BlueHarborContext : DbContext
         modelBuilder.Entity<User>(entity =>
         {
             entity.ToTable("Users", t =>
-                t.HasCheckConstraint("CK_Users_Role", "[Role] IN ('Scheduler','Operator')"));
+                t.HasCheckConstraint("CK_Users_Role", "[Role] IN ('Scheduler','Operator','Admin')"));
 
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.Username).IsUnique();
             entity.Property(e => e.Username).HasMaxLength(50).IsUnicode(false);
             entity.Property(e => e.PasswordHash).HasMaxLength(255).IsUnicode(false);
             entity.Property(e => e.Role).HasMaxLength(20).IsUnicode(false);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
         });
 
         // ---------- AssignmentHistory: storico append-only, snapshot denormalizzati ----------

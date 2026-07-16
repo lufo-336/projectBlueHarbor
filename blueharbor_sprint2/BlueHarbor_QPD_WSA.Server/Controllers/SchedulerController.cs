@@ -9,7 +9,7 @@ namespace BlueHarbor_QPD_WSA.Server.Controllers;
 
 [ApiController]
 [Route("api/scheduler")]
-[Authorize(Roles = "Scheduler")]
+[Authorize(Roles = "Scheduler,Admin")]
 public class SchedulerController : ControllerBase
 {
     private readonly BlueHarborContext _context;

@@ -42,7 +42,7 @@ public class ShipsController : ControllerBase
     //  Ordinamento stabile per Id. Risposta: ShipPageResponse (items + meta + counts).
     // ==========================================================================
     [HttpGet]
-    [Authorize(Roles = "Operator")]
+    [Authorize(Roles = "Operator,Admin")]
     public async Task<IActionResult> GetShips(
         [FromQuery] string? status = null,
         [FromQuery] string? size = null,
@@ -121,7 +121,7 @@ public class ShipsController : ControllerBase
     //  size, giorno di arrivo e durata sono generati dal backend; la nave nasce Pending.
     // ==========================================================================
     [HttpPost]
-    [Authorize(Roles = "Operator")]
+    [Authorize(Roles = "Operator,Admin")]
     public async Task<IActionResult> CreateShip([FromBody] CreateShipRequest request)
     {
         // --- Validazione input: nome obbligatorio, nota opzionale ---
@@ -170,7 +170,7 @@ public class ShipsController : ControllerBase
     //  (la nave Pending non è mai entrata nel ciclo → il modello a 3 stati resta intatto).
     // ==========================================================================
     [HttpDelete("{id:int}")]
-    [Authorize(Roles = "Operator")]
+    [Authorize(Roles = "Operator,Admin")]
     public async Task<IActionResult> CancelShip(int id)
     {
         var ship = await _context.Ships.FindAsync(id);
@@ -204,7 +204,7 @@ public class ShipsController : ControllerBase
     /// della banchina (algoritmo di accodamento). La nave passa a Assigned.
     /// </summary>
     [HttpPost("{id:int}/assign")]
-    [Authorize(Roles = "Scheduler")]
+    [Authorize(Roles = "Scheduler,Admin")]
     public async Task<IActionResult> AssignShip(int id, [FromBody] AssignShipRequest request)
     {
         // --- 1) La nave esiste? ---

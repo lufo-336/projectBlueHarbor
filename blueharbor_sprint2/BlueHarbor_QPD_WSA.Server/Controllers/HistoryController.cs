@@ -16,7 +16,7 @@ namespace BlueHarbor_QPD_WSA.Server.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/history")]
-[Authorize(Roles = "Scheduler")]
+[Authorize(Roles = "Scheduler,Admin")]
 public class HistoryController : ControllerBase
 {
     private readonly BlueHarborContext _context;

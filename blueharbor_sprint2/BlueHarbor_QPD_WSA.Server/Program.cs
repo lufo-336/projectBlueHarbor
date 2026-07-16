@@ -60,6 +60,7 @@ var app = builder.Build();
 // ==========================================================================
 //  SEED: utenti demo per il login (solo se la tabella Users è vuota)
 //  Credenziali: operator@blueharbor / operator123  —  scheduler@blueharbor / scheduler123
+//              admin@blueharbor / admin123
 // ==========================================================================
 using (var scope = app.Services.CreateScope())
 {
@@ -70,7 +71,8 @@ using (var scope = app.Services.CreateScope())
         {
             db.Users.AddRange(
                 new User { Username = "operator@blueharbor", PasswordHash = PasswordHasher.Hash("operator123"), Role = "Operator" },
-                new User { Username = "scheduler@blueharbor", PasswordHash = PasswordHasher.Hash("scheduler123"), Role = "Scheduler" });
+                new User { Username = "scheduler@blueharbor", PasswordHash = PasswordHasher.Hash("scheduler123"), Role = "Scheduler" },
+                new User { Username = "admin@blueharbor", PasswordHash = PasswordHasher.Hash("admin123"), Role = "Admin" });
             db.SaveChanges();
         }
     }
