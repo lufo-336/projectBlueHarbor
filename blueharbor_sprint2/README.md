@@ -71,6 +71,10 @@ Prerequisiti: .NET SDK 10, Node.js 20+, SQL Server locale (istanza di default) c
 2. Login Scheduler → seleziona la nave → le banchine compatibili si evidenziano
    con l'anteprima tratteggiata del primo giorno libero → "Assegna". La timeline
    mostra occupazioni, colonna "oggi" e stato libero/occupato di ogni banchina.
+   ⚠️ In demo: la timeline mostra **14 giorni** da oggi, ma il sistema genera arrivi
+   fino a **+30**. Una nave assegnata con arrivo lontano è corretta ma *non si vede*
+   nella timeline — per mostrare il blocco, scegli una nave con arrivo vicino
+   (o avanza con "Next Day" finché rientra nell'orizzonte).
 3. Caso di accodamento: assegna una seconda nave alla stessa banchina →
    l'anteprima (e l'assegnazione) parte DOPO la fine dell'occupazione esistente.
 4. "Next Day" fino a fine sosta → la nave diventa `Departed` e libera la banchina.

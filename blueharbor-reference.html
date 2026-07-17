@@ -706,26 +706,38 @@
 
     <section id="frontend">
       <div class="section-head"><span class="section-num">08</span><h2>Struttura frontend</h2></div>
-      <p>React 19 + Vite, nessun router — la vista cambia in base al ruolo dell'utente autenticato, non all'URL.</p>
+      <p>React 19 + Vite, nessun router — la vista cambia in base al ruolo dell'utente autenticato, non
+        all'URL: <code>App.jsx</code> sceglie fra <code>OperatorView</code>, <code>SchedulerView</code> e
+        <code>AdminView</code>. Una vista per ruolo, ognuna autosufficiente: i componenti in
+        <code>components/</code> sono solo quelli davvero condivisi (topbar, toast, spinner).</p>
       <h3>Contesti (stato globale)</h3>
       <div class="tablewrap">
         <table>
           <thead><tr><th>Contesto</th><th>Responsabilità</th></tr></thead>
           <tbody>
-            <tr><td><code>AuthContext</code></td><td>Utente corrente, login/logout, token in <code>localStorage</code></td></tr>
-            <tr><td><code>RoleContext</code></td><td>Ruolo attivo — valorizzato dalla risposta del login</td></tr>
-            <tr><td><code>DayContext</code></td><td>Giorno virtuale reale, letto dal backend (ricollegato stasera)</td></tr>
-            <tr><td><code>LanguageContext</code></td><td>Traduzioni IT/EN/ES</td></tr>
+            <tr><td><code>AuthContext</code></td><td>Utente corrente (incluso il ruolo), login/logout, token in <code>localStorage</code></td></tr>
+            <tr><td><code>DayContext</code></td><td>Giorno virtuale, letto dal backend; le viste si ricaricano quando cambia</td></tr>
             <tr><td><code>ToastContext</code></td><td>Notifiche di successo/errore</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>Moduli condivisi (<code>services/</code>)</h3>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Modulo</th><th>Responsabilità</th></tr></thead>
+          <tbody>
+            <tr><td><code>api.js</code></td><td>Unico punto di chiamata HTTP: token, Problem Details → messaggio, 204, download CSV</td></tr>
+            <tr><td><code>scheduling.js</code></td><td>Replica client di <code>SchedulingRules</code>, solo per l'anteprima di accodamento</td></tr>
+            <tr><td><code>roles.js</code></td><td>Ruoli ed etichette in italiano — unico punto di verità, usato da <code>Topbar</code> e <code>AdminView</code></td></tr>
           </tbody>
         </table>
       </div>
       <h3>Percorso di un'azione (esempio: assegnazione)</h3>
       <ol class="plain">
-        <li><code>SchedulerView</code> chiama <code>getSchedulerDashboard()</code> e passa navi pending + banchine a <code>PendingShipsList</code></li>
-        <li>Selezionando una nave si apre <code>ShipAssignment</code>, che filtra le banchine per <code>size</code> compatibile</li>
-        <li>Alla conferma, <code>assignShip(shipId, berthId)</code> chiama <code>POST /api/ships/{id}/assign</code></li>
-        <li>La risposta aggiorna la lista tramite un contatore di refresh locale — nessuno stato globale complesso</li>
+        <li><code>SchedulerView</code> chiama <code>getSchedulerDashboard()</code> e riceve navi pending + banchine con le loro occupazioni</li>
+        <li>Si seleziona una nave in attesa; la timeline evidenzia le banchine compatibili (stessa <code>size</code>) e mostra in tratteggiato l'anteprima del giorno di accodamento, calcolata da <code>scheduling.js</code></li>
+        <li>Alla conferma, <code>api.assignShip(shipId, berthId)</code> chiama <code>POST /api/ships/{id}/assign</code></li>
+        <li>Fa fede il giorno restituito dal <strong>server</strong>, non l'anteprima client; dashboard e storico vengono poi ricaricati</li>
       </ol>
     </section>
 
@@ -748,7 +760,7 @@
           </tbody>
         </table>
       </div>
-      <p>Il cuore dell'applicazione (Sprint 1–5) è completo e funziona end-to-end — verificato girando l'app dal vivo, non solo leggendo il codice. Sprint 6 è quasi completo: login e <strong>protezione degli endpoint per ruolo</strong> (401/403) funzionano; resta la semplificazione dell'hashing SHA-256 senza salt e il seed utenti lato DB. Sono state poi consegnate — sul branch <code>feature/ship-notes</code> — le evoluzioni degli Sprint 7 (nota facoltativa in creazione nave, paginazione/filtri e validazione su <code>GET /api/ships</code>, annullamento di una nave solo se Pending) e 8 (storico assegnazioni append-only con export CSV, tutto verificato dal vivo), più un primo passo dello Sprint 10 (timeline Scheduler più leggibile, stato libero/occupato distinguibile senza colore), lo Sprint 9 (packaging Docker: <code>docker compose up --build</code> avvia DB + app su una macchina pulita) e il ruolo <strong>Admin</strong> di piattaforma (gestione utenti + capacità di Operatore e Scheduler). Resta aperta solo la rifinitura finale dell'accessibilità (Sprint 10).</p>
+      <p>Il cuore dell'applicazione (Sprint 1–5) è completo e funziona end-to-end — verificato girando l'app dal vivo, non solo leggendo il codice. Sprint 6 è quasi completo: login e <strong>protezione degli endpoint per ruolo</strong> (401/403) funzionano; resta la semplificazione dell'hashing SHA-256 senza salt e il seed utenti lato DB. Sono state poi consegnate — sul branch <code>feature/ship-notes</code> — le evoluzioni degli Sprint 7 (nota facoltativa in creazione nave, paginazione/filtri e validazione su <code>GET /api/ships</code>, annullamento di una nave solo se Pending) e 8 (storico assegnazioni append-only con export CSV, tutto verificato dal vivo), più un primo passo dello Sprint 10 (timeline Scheduler più leggibile: stato libero/occupato distinguibile senza colore — la <em>forma</em> del pallino, non la tinta — colonna "oggi" etichettata a testo, legenda, e blocchi occupazione con contrasto adeguato anche in tema scuro), lo Sprint 9 (packaging Docker: <code>docker compose up --build</code> avvia DB + app su una macchina pulita) e il ruolo <strong>Admin</strong> di piattaforma (gestione utenti + capacità di Operatore e Scheduler). Resta aperta solo la rifinitura finale dell'accessibilità (Sprint 10).</p>
     </section>
 
     <section id="rischi">

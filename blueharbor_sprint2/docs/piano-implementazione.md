@@ -9,8 +9,13 @@
 > (verificate dal vivo). Riepilogo: #1 Storico assegnazioni · #2 Paginazione/filtri ·
 > #3 Note nave · #4 Docker/compose · #5 Timeline Scheduler · #6 Annulla se Pending ·
 > #7 Export CSV · #8 Ruolo Admin. DB: `database/script6.sql` (storico) e
-> `database/script7.sql` (Admin/IsActive). Resta la rifinitura di accessibilità e la
-> verifica visiva delle UI nuove.
+> `database/script7.sql` (Admin/IsActive).
+>
+> **Verifica visiva fatta** (17/07, app avviata davvero, viste Scheduler e Admin in tema
+> chiaro e scuro). Ha trovato due difetti, entrambi corretti: la topbar etichettava
+> "Scheduler" l'utente Admin (ternario binario più vecchio della #8 → ruoli ed etichette
+> ora in `services/roles.js`), e i blocchi occupazione della timeline erano illeggibili in
+> tema scuro (token `--occupation` dedicato). Resta la rifinitura di accessibilità.
 
 ## Note trasversali (valgono per tutte)
 
@@ -145,6 +150,11 @@ esplicito della consegna. ✅ in scopo (chiarezza funzionale, non estetica).
 
 **Accettazione.** Due navi accodate sulla stessa banchina appaiono come due barre consecutive non
 sovrapposte; il "oggi" è sempre visibile.
+
+**Verificato** (17/07, a schermo, con occupazioni di prova a cavallo del giorno corrente e
+dell'orizzonte): barre sui giorni giusti, taglio corretto ai due bordi, pill "Occupata" solo sulle
+banchine coperte oggi. Nota: con pochi dati a DB la timeline appare vuota perché le occupazioni
+cadono oltre i 14 giorni mostrati — è il comportamento atteso, non un errore.
 
 ---
 
