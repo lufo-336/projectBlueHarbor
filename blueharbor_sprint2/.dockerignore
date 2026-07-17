@@ -1,0 +1,8 @@
+# Artefatti che NON devono entrare nel contesto di build (li rigenera il Dockerfile).
+**/node_modules
+**/dist
+**/bin
+**/obj
+**/.vs
+**/*.user
+database/

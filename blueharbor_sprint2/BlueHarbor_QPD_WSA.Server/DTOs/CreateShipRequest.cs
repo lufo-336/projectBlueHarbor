@@ -1,3 +1,3 @@
 ﻿namespace BlueHarbor_QPD_WSA.Server.DTOs;
 
-public record CreateShipRequest(string Name);
+public record CreateShipRequest(string Name, string? Notes = null);

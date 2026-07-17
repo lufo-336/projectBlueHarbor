@@ -1,39 +1,58 @@
 # BlueHarbor Terminal
 
 Web app per la gestione delle banchine di un terminal container (progetto
-Learning by Project, ITS WSA 2025-2027). Due ruoli:
+Learning by Project, ITS WSA 2025-2027). Tre ruoli:
 
 - **Operatore** — registra le navi in arrivo (il sistema genera taglia,
-  giorno di arrivo e durata della sosta; la nave nasce `Pending`);
+  giorno di arrivo e durata della sosta; la nave nasce `Pending`). Può inserire
+  una **nota** facoltativa e **annullare** una nave finché è `Pending`;
 - **Scheduler** — assegna le navi alle 8 banchine fisse (1 XL, 1 L, 2 M, 4 S,
   solo taglie identiche) con **accodamento**: se la banchina è occupata, la
   nave parte dal primo slot libero. Il tempo avanza col pulsante **Next Day**
   (giorno virtuale, nessun real-time); a fine sosta la nave diventa `Departed`.
+  Vede la **timeline** delle banchine e lo **storico** assegnazioni (con export CSV);
+- **Admin** — ruolo di piattaforma: **gestisce gli utenti** (crea, cambia ruolo,
+  reset password, attiva/disattiva) e ha le capacità di Operatore e Scheduler.
+  Nessun potere di dominio aggiuntivo (niente riassegnazioni o bypass delle regole).
 
 ## Architettura
 
 React 19 + Vite (frontend) → ASP.NET Core Web API con EF Core (backend) →
-SQL Server. Autenticazione JWT con ruoli (`Operator` / `Scheduler`) applicata
-su tutti gli endpoint. Errori come Problem Details (RFC 7807).
+SQL Server. Autenticazione JWT con ruoli (`Operator` / `Scheduler` / `Admin`)
+applicata su tutti gli endpoint (401/403). Errori come Problem Details (RFC 7807).
+`GET /api/ships` è paginato e filtrabile. Lo storico assegnazioni è una tabella
+**append-only** (`AssignmentHistory`) alimentata dall'assegnazione e dal Next Day.
 
 | Cartella | Contenuto |
 |---|---|
-| `BlueHarbor_QPD_WSA.Server/` | Backend: controller, servizi di dominio (`SchedulingRules`, `TimeService`), auth |
-| `frontend/` | Frontend React: viste Operatore e Scheduler (timeline + assegnazione guidata) |
-| `database/` | Script T-SQL (usare il più recente, `script5.sql`) |
+| `BlueHarbor_QPD_WSA.Server/` | Backend: controller (ships, scheduler, history, admin, auth), servizi di dominio (`SchedulingRules`, `TimeService`), auth |
+| `frontend/` | Frontend React: viste Operatore, Scheduler (timeline + assegnazione guidata + storico) e Admin |
+| `database/` | Script T-SQL incrementali: `script5.sql` (base) + `script6.sql` (storico) + `script7.sql` (ruolo Admin) |
 
-## Prerequisiti
+## Avvio — opzione A: un solo comando (Docker)
 
-- .NET SDK 10, Node.js 20+, SQL Server locale (istanza di default) con SSMS.
+Richiede solo Docker. Da questa cartella (`blueharbor_sprint2/`):
 
-## Avvio in locale
+```bash
+docker compose up --build      # DB + app su http://localhost:8080
+# per azzerare tutto (DB compreso):
+docker compose down -v
+```
 
-1. **Database** (solo la prima volta): eseguire `database/script5.sql` in SSMS
-   → crea il DB `BlueHarbor` con le 8 banchine e il giorno virtuale a 1.
+L'app si **auto-inizializza** (crea lo schema e semina banchine, giorno virtuale
+e utenti demo): non serve applicare a mano gli script SQL.
+
+## Avvio — opzione B: server locali (sviluppo)
+
+Prerequisiti: .NET SDK 10, Node.js 20+, SQL Server locale (istanza di default) con SSMS.
+
+1. **Database** (solo la prima volta): eseguire in SSMS `database/script5.sql`
+   (crea il DB `BlueHarbor` con le 8 banchine e il giorno virtuale a 1) e poi
+   gli incrementali `database/script6.sql` e `database/script7.sql`.
    La connection string è in `BlueHarbor_QPD_WSA.Server/appsettings.json`.
 2. **Backend**: `dotnet run --launch-profile https` dentro
    `BlueHarbor_QPD_WSA.Server/` → API su `https://localhost:7008`
-   (in Development gli utenti demo vengono seminati in automatico).
+   (all'avvio lo schema/seed mancante viene comunque completato in automatico).
 3. **Frontend**: `npm install` e `npm run dev` dentro `frontend/` →
    `http://localhost:5173` (il proxy Vite gira `/api` sul backend).
 
@@ -43,16 +62,26 @@ su tutti gli endpoint. Errori come Problem Details (RFC 7807).
 |---|---|---|
 | Operatore | `operator@blueharbor` | `operator123` |
 | Scheduler | `scheduler@blueharbor` | `scheduler123` |
+| Admin | `admin@blueharbor` | `admin123` |
 
 ## Checklist demo (verifica end-to-end)
 
-1. Login Operatore → registra una nave → toast con taglia/arrivo/durata generate.
+1. Login Operatore → registra una nave (con nota facoltativa) → toast con
+   taglia/arrivo/durata generate. Filtra/pagina l'elenco navi; annulla una nave `Pending`.
 2. Login Scheduler → seleziona la nave → le banchine compatibili si evidenziano
-   con l'anteprima tratteggiata del primo giorno libero → "Assegna".
+   con l'anteprima tratteggiata del primo giorno libero → "Assegna". La timeline
+   mostra occupazioni, colonna "oggi" e stato libero/occupato di ogni banchina.
+   ⚠️ In demo: la timeline mostra **14 giorni** da oggi, ma il sistema genera arrivi
+   fino a **+30**. Una nave assegnata con arrivo lontano è corretta ma *non si vede*
+   nella timeline — per mostrare il blocco, scegli una nave con arrivo vicino
+   (o avanza con "Next Day" finché rientra nell'orizzonte).
 3. Caso di accodamento: assegna una seconda nave alla stessa banchina →
    l'anteprima (e l'assegnazione) parte DOPO la fine dell'occupazione esistente.
 4. "Next Day" fino a fine sosta → la nave diventa `Departed` e libera la banchina.
-5. Refresh della pagina dopo il login → si resta dentro l'app (niente flash login).
+   La sezione **Storico** registra assegnazioni e partenze (esportabili in CSV).
+5. Login Admin → crea un utente, cambia ruolo, disattiva/riattiva; passa alle
+   viste Operatore/Scheduler dallo switcher.
+6. Refresh della pagina dopo il login → si resta dentro l'app (niente flash login).
 
 ## Note tecniche per chi sviluppa
 
@@ -62,5 +91,8 @@ su tutti gli endpoint. Errori come Problem Details (RFC 7807).
   pure). Il frontend ne tiene una replica in `frontend/src/services/scheduling.js`
   SOLO per l'anteprima: se si cambia la regola, aggiornare entrambi
   (check di parità: `node checks/scheduling.check.mjs` da `frontend/`).
+- Lo schema è gestito con script SQL versionati; il modello EF
+  (`Models/BlueHarborContext.OnModelCreating`) deve restare allineato. All'avvio
+  l'app chiama `EnsureCreated()` (utile nel container; no-op su un DB esistente).
 - Stack scelto a giugno 2026: il data access usa EF Core (deviazione consapevole
   dal piano ADO.NET, decisa il 2026-07-15 per non riscrivere il layer dati).

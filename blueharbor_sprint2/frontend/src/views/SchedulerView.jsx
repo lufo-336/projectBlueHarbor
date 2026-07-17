@@ -10,12 +10,17 @@ import './SchedulerView.css';
 // NB: deve combaciare con repeat(14, ...) in SchedulerView.css.
 const TIMELINE_DAYS = 14;
 
+const EVENT_LABELS = { Assigned: 'Assegnata', Departed: 'Partita' };
+
 export default function SchedulerView() {
   const { currentDay } = useDay();
   const { showSuccess, showError } = useToast();
   const [dashboard, setDashboard] = useState(null); // null = primo caricamento
   const [selectedShipId, setSelectedShipId] = useState(null);
   const [assigning, setAssigning] = useState(false);
+  const [history, setHistory] = useState(null); // storico assegnazioni (sola lettura)
+  const [eventFilter, setEventFilter] = useState('');
+  const [exporting, setExporting] = useState(false);
 
   const loadDashboard = useCallback(async () => {
     try {
@@ -25,8 +30,18 @@ export default function SchedulerView() {
     }
   }, [showError]);
 
-  // Ricarica al mount e a ogni Next Day.
+  const loadHistory = useCallback(async () => {
+    try {
+      setHistory(await api.getHistory({ eventType: eventFilter }));
+    } catch (err) {
+      showError(err.message);
+      setHistory([]);
+    }
+  }, [showError, eventFilter]);
+
+  // Ricarica al mount, a ogni Next Day (nuove partenze) e dopo un'assegnazione.
   useEffect(() => { loadDashboard(); }, [loadDashboard, currentDay]);
+  useEffect(() => { loadHistory(); }, [loadHistory, currentDay]);
 
   async function handleAssign(berth, selectedShip) {
     if (!selectedShip || assigning) return;
@@ -36,11 +51,31 @@ export default function SchedulerView() {
       // Fa fede il giorno calcolato dal SERVER, non l'anteprima client.
       showSuccess(`${result.name} assegnata a ${berth.name}: occupazione dal giorno ${result.startDay}.`);
       setSelectedShipId(null);
-      await loadDashboard();
+      await Promise.all([loadDashboard(), loadHistory()]);
     } catch (err) {
       showError(err.message);
     } finally {
       setAssigning(false);
+    }
+  }
+
+  // Esporta lo storico (con i filtri attivi) come CSV scaricabile.
+  async function handleExport() {
+    setExporting(true);
+    try {
+      const blob = await api.exportHistoryCsv({ eventType: eventFilter });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'storico.csv';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      showError(err.message);
+    } finally {
+      setExporting(false);
     }
   }
 
@@ -82,7 +117,14 @@ export default function SchedulerView() {
 
       {/* ---- Timeline: banchine per riga, giorni per colonna (passo 2) ---- */}
       <section className="card scheduler__timeline">
-        <h2>Timeline banchine</h2>
+        <div className="scheduler__timeline-head">
+          <h2>Timeline banchine</h2>
+          <ul className="timeline-legend">
+            <li><span className="lg lg--occupied" aria-hidden="true" />Occupazione</li>
+            <li><span className="lg lg--preview" aria-hidden="true" />Anteprima accodamento</li>
+            <li><span className="lg lg--today" aria-hidden="true" />Oggi</li>
+          </ul>
+        </div>
         <div className="timeline-scroll">
           <div className="timeline">
             {/* Intestazione coi numeri dei giorni */}
@@ -92,6 +134,7 @@ export default function SchedulerView() {
                 <div key={day} className={`timeline__head mono ${i === 0 ? 'is-today' : ''}`}
                      style={{ gridColumn: i + 2 }}>
                   g{day}
+                  {i === 0 && <span className="timeline__today-tag">oggi</span>}
                 </div>
               ))}
             </div>
@@ -112,6 +155,10 @@ export default function SchedulerView() {
                   <div className="timeline__label">
                     <span className="timeline__berth">{berth.name}</span>
                     <span className="badge badge-size">{berth.size}</span>
+                    <span className={`berth-status ${berth.isOccupiedNow ? 'is-occupied' : 'is-free'}`}>
+                      <span className="berth-status__dot" aria-hidden="true" />
+                      {berth.isOccupiedNow ? 'Occupata' : 'Libera'}
+                    </span>
                     {compatible && (
                       <button className="btn btn-gold timeline__assign" disabled={assigning}
                               onClick={() => handleAssign(berth, selectedShip)}>
@@ -135,7 +182,8 @@ export default function SchedulerView() {
                     return (
                       <div key={a.shipId} className="timeline__block"
                            style={{ gridColumn: `${start - day0 + 2} / ${end - day0 + 2}` }}
-                           title={`${a.shipName}: giorni ${a.startDay}–${a.endDay - 1}`}>
+                           title={`${a.shipName}: giorni ${a.startDay}–${a.endDay - 1}`}
+                           aria-label={`${berth.name} occupata da ${a.shipName}, giorni ${a.startDay}–${a.endDay - 1}`}>
                         {a.shipName}
                       </div>
                     );
@@ -160,6 +208,64 @@ export default function SchedulerView() {
             })}
           </div>
         </div>
+      </section>
+
+      {/* ---- Storico assegnazioni (#1): sola lettura, append-only lato backend ---- */}
+      <section className="card scheduler__history">
+        <div className="scheduler__history-head">
+          <h2>Storico assegnazioni</h2>
+          <div className="scheduler__history-tools">
+            <label className="field field--inline">
+              <span>Evento</span>
+              <select value={eventFilter} onChange={(e) => setEventFilter(e.target.value)}>
+                <option value="">Tutti</option>
+                <option value="Assigned">Assegnazioni</option>
+                <option value="Departed">Partenze</option>
+              </select>
+            </label>
+            <button type="button" className="btn btn-ghost btn-sm"
+                    disabled={exporting || !history || history.length === 0}
+                    onClick={handleExport}>
+              {exporting ? 'Esporto…' : 'Esporta CSV'}
+            </button>
+          </div>
+        </div>
+
+        {history === null ? (
+          <p className="scheduler__hint">Caricamento storico…</p>
+        ) : history.length === 0 ? (
+          <p className="scheduler__hint">
+            {eventFilter ? 'Nessun evento di questo tipo.' : 'Nessun evento registrato finora.'}
+          </p>
+        ) : (
+          <div className="scheduler__history-wrap">
+            <table className="scheduler__history-table">
+              <thead>
+                <tr>
+                  <th>Evento</th><th>Nave</th><th>Taglia</th><th>Banchina</th>
+                  <th>Occupazione</th><th>Giorno evento</th><th>Registrato</th>
+                </tr>
+              </thead>
+              <tbody>
+                {history.map((h) => (
+                  <tr key={h.id}>
+                    <td>
+                      <span className={`badge badge-${h.eventType.toLowerCase()}`}>
+                        {EVENT_LABELS[h.eventType]}
+                      </span>
+                    </td>
+                    <td>{h.shipName}</td>
+                    <td><span className="badge badge-size">{h.size}</span></td>
+                    <td>{h.berthName}</td>
+                    <td className="mono">g{h.occupationStartDay}–g{h.occupationEndDay - 1}</td>
+                    <td className="mono">g{h.eventDay}</td>
+                    <td className="mono">{new Date(h.createdAt).toLocaleString('it-IT')}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
     </div>
   );

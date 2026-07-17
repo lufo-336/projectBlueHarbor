@@ -58,21 +58,49 @@ builder.Services.AddAuthorization();
 var app = builder.Build();
 
 // ==========================================================================
-//  SEED: utenti demo per il login (solo se la tabella Users è vuota)
+//  INIT + SEED all'avvio.
+//  - EnsureCreated crea DB e schema se non esistono: serve nel container
+//    (partenza da zero). Sul DB locale già creato dagli script SQL è un no-op
+//    (non tocca uno schema esistente), quindi non interferisce con lo sviluppo.
+//  - Seed idempotente dei dati statici (8 banchine, giorno virtuale) e degli
+//    utenti demo, così `docker compose up` porta a un'app subito utilizzabile.
 //  Credenziali: operator@blueharbor / operator123  —  scheduler@blueharbor / scheduler123
+//              admin@blueharbor / admin123
 // ==========================================================================
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<BlueHarborContext>();
     try
     {
+        db.Database.EnsureCreated();
+
+        if (!db.Berths.Any())
+        {
+            db.Berths.AddRange(
+                new Berth { Name = "Berth XL-1", Size = "XL" },
+                new Berth { Name = "Berth L-1", Size = "L" },
+                new Berth { Name = "Berth M-1", Size = "M" },
+                new Berth { Name = "Berth M-2", Size = "M" },
+                new Berth { Name = "Berth S-1", Size = "S" },
+                new Berth { Name = "Berth S-2", Size = "S" },
+                new Berth { Name = "Berth S-3", Size = "S" },
+                new Berth { Name = "Berth S-4", Size = "S" });
+        }
+
+        if (!db.Settings.Any(s => s.Key == "CurrentVirtualDay"))
+        {
+            db.Settings.Add(new Setting { Key = "CurrentVirtualDay", Value = "1" });
+        }
+
         if (!db.Users.Any())
         {
             db.Users.AddRange(
                 new User { Username = "operator@blueharbor", PasswordHash = PasswordHasher.Hash("operator123"), Role = "Operator" },
-                new User { Username = "scheduler@blueharbor", PasswordHash = PasswordHasher.Hash("scheduler123"), Role = "Scheduler" });
-            db.SaveChanges();
+                new User { Username = "scheduler@blueharbor", PasswordHash = PasswordHasher.Hash("scheduler123"), Role = "Scheduler" },
+                new User { Username = "admin@blueharbor", PasswordHash = PasswordHasher.Hash("admin123"), Role = "Admin" });
         }
+
+        db.SaveChanges();
     }
     catch (Exception ex)
     {

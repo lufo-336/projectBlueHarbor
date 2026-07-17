@@ -52,6 +52,14 @@ public class AuthController : ControllerBase
                 statusCode: StatusCodes.Status400BadRequest);
         }
 
+        // --- Account disattivato da un Admin: credenziali giuste ma accesso negato ---
+        if (!user.IsActive)
+        {
+            return Problem(
+                detail: "Account disattivato: contatta un amministratore.",
+                statusCode: StatusCodes.Status403Forbidden);
+        }
+
         // --- Credenziali corrette: rilascio il token e restituisco l'utente ---
         var token = _tokens.CreateToken(user);
         return Ok(new LoginResponse(ToDto(user), token));

@@ -6,6 +6,7 @@ import './AuthPage.css';
 const DEMO_ACCOUNTS = [
   { label: 'Operatore', email: 'operator@blueharbor', password: 'operator123' },
   { label: 'Scheduler', email: 'scheduler@blueharbor', password: 'scheduler123' },
+  { label: 'Admin', email: 'admin@blueharbor', password: 'admin123' },
 ];
 
 export default function AuthPage() {

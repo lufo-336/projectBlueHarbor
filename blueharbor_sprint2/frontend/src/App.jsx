@@ -5,6 +5,14 @@ import AuthPage from './views/AuthPage.jsx';
 import Topbar from './components/Topbar.jsx';
 import OperatorView from './views/OperatorView.jsx';
 import SchedulerView from './views/SchedulerView.jsx';
+import AdminView from './views/AdminView.jsx';
+
+// La vista dipende dal ruolo deciso al login (nessun react-router).
+function viewForRole(role) {
+  if (role === 'Operator') return <OperatorView />;
+  if (role === 'Scheduler') return <SchedulerView />;
+  return <AdminView />; // Admin
+}
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -19,7 +27,7 @@ export default function App() {
       <div className="app-shell">
         <Topbar />
         <main className="app-main">
-          {user.role === 'Operator' ? <OperatorView /> : <SchedulerView />}
+          {viewForRole(user.role)}
         </main>
       </div>
     </DayProvider>
