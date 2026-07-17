@@ -1,14 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../services/api.js';
+import { ROLES, ROLE_LABELS } from '../services/roles.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import OperatorView from './OperatorView.jsx';
 import SchedulerView from './SchedulerView.jsx';
 import './AdminView.css';
-
-const ROLES = ['Operator', 'Scheduler', 'Admin'];
-const ROLE_LABELS = { Operator: 'Operatore', Scheduler: 'Scheduler', Admin: 'Admin' };
 
 // L'Admin può gestire gli accessi (tab Utenti) e operare come Operatore/Scheduler
 // (le stesse viste, riusate). Nessun potere di dominio aggiuntivo: sono gli

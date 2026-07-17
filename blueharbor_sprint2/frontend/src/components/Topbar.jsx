@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { useDay } from '../context/DayContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import { api } from '../services/api.js';
+import { roleLabel } from '../services/roles.js';
 import './Topbar.css';
 
 export default function Topbar() {
@@ -39,7 +40,7 @@ export default function Topbar() {
         <button className="btn btn-gold" onClick={handleNextDay} disabled={advancing}>
           {advancing ? 'Avanzo…' : 'Next Day →'}
         </button>
-        <span className="topbar__role">{user.role === 'Operator' ? 'Operatore' : 'Scheduler'}</span>
+        <span className="topbar__role">{roleLabel(user.role)}</span>
         <span className="topbar__user">{user.name}</span>
         <button className="btn btn-ghost topbar__logout" onClick={logout}>Esci</button>
       </div>

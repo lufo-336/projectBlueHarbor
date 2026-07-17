@@ -19,7 +19,7 @@
 }
 .timeline-legend li { display: inline-flex; align-items: center; gap: 0.4rem; }
 .lg { width: 20px; height: 12px; border-radius: var(--radius-sm); flex: none; }
-.lg--occupied { background: var(--cobalt-light); }
+.lg--occupied { background: var(--occupation); }
 .lg--preview { background: transparent; border: 2px dashed var(--sahara); }
 .lg--today { background: var(--sahara-pale); border: 1px solid var(--sahara-border); }
 
@@ -112,7 +112,7 @@
 .timeline__block {
   grid-row: 1; z-index: 1; align-self: center;
   margin: 0 2px; padding: 0.3rem 0.5rem;
-  background: var(--cobalt-light); color: #fff;
+  background: var(--occupation); color: #fff;
   border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 600;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
