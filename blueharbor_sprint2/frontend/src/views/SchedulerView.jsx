@@ -61,7 +61,7 @@ export default function SchedulerView() {
     try {
       const result = await api.assignShip(selectedShip.id, berth.id);
       // Fa fede il giorno calcolato dal SERVER, non l'anteprima client.
-      showSuccess(`${result.name} assegnata a ${berth.name}: occupazione dal giorno ${result.startDay}.`);
+      showSuccess(`${result.name} assegnata a ${berth.name}: occupazione dal giorno ${result.occupationStartDay}.`);
       setSelectedShipId(null);
       await Promise.all([loadDashboard(), loadHistory()]);
     } catch (err) {
