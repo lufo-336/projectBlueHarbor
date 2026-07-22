@@ -152,4 +152,14 @@ export const api = {
     request(`/api/admin/users/${id}`, { method: 'PUT', body: changes }),
   adminDeactivateUser: (id) => request(`/api/admin/users/${id}`, { method: 'DELETE' }),
   adminResetSimulation: () => request('/api/admin/simulation/reset', { method: 'POST' }),
+
+  // --- Manutenzioni banchina (ruolo Admin) ---
+  adminListMaintenance: (berthId) => {
+    const query = toQuery({ berthId });
+    return request(query ? `/api/admin/maintenance?${query}` : '/api/admin/maintenance');
+  },
+  adminCreateMaintenance: (berthId, startDay, endDay) =>
+    request('/api/admin/maintenance', { method: 'POST', body: { berthId, startDay, endDay } }),
+  adminRevokeMaintenance: (id) =>
+    request(`/api/admin/maintenance/${id}`, { method: 'DELETE' }),
 };
