@@ -30,6 +30,10 @@ builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
+// Telemetria: attiva solo dove APPLICATIONINSIGHTS_CONNECTION_STRING e' presente
+// (in locale resta spenta: nessun rumore, nessuna dipendenza).
+builder.Services.AddApplicationInsightsTelemetry();
+
 // --- Servizi di dominio ---
 builder.Services.AddScoped<ShipGeneratorService>();
 builder.Services.AddScoped<TimeService>();
