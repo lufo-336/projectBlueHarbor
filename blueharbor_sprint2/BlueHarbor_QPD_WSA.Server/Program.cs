@@ -92,6 +92,12 @@ using (var scope = app.Services.CreateScope())
             db.Settings.Add(new Setting { Key = "CurrentVirtualDay", Value = "1" });
         }
 
+        if (!db.Settings.Any(s => s.Key == "Day1Date"))
+        {
+            // Data di calendario del giorno virtuale 1 (solo presentazione: il dominio resta a giorni interi).
+            db.Settings.Add(new Setting { Key = "Day1Date", Value = "2026-06-08" });
+        }
+
         if (!db.Users.Any())
         {
             db.Users.AddRange(

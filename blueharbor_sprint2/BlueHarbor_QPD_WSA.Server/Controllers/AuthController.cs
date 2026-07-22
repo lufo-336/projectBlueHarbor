@@ -60,6 +60,14 @@ public class AuthController : ControllerBase
                 statusCode: StatusCodes.Status403Forbidden);
         }
 
+        // --- Migrazione trasparente: hash nel vecchio formato -> rigenerato ora che
+        //     conosciamo la password in chiaro. Nessun utente perde l'accesso. ---
+        if (PasswordHasher.NeedsRehash(user.PasswordHash))
+        {
+            user.PasswordHash = PasswordHasher.Hash(request.Password);
+            await _context.SaveChangesAsync();
+        }
+
         // --- Credenziali corrette: rilascio il token e restituisco l'utente ---
         var token = _tokens.CreateToken(user);
         return Ok(new LoginResponse(ToDto(user), token));

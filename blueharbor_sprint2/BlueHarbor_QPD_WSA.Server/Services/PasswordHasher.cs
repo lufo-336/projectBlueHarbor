@@ -4,20 +4,40 @@ using System.Text;
 namespace BlueHarbor_QPD_WSA.Server.Services;
 
 /// <summary>
-/// Hashing delle password. Usa SHA-256 (semplificazione DIDATTICA): in un'app reale
-/// si userebbe un algoritmo con salt e costo, come bcrypt/PBKDF2 (ASP.NET Identity).
-/// Qui serve solo a non salvare le password in chiaro nel database.
+/// Hashing delle password con PBKDF2 (salt casuale + 100k iterazioni).
+/// Retro-compatibile: Verify riconosce anche il vecchio formato SHA-256
+/// esadecimale, cosi' gli utenti esistenti migrano al primo login (rehash-on-login).
 /// </summary>
 public static class PasswordHasher
 {
-    // Calcola l'hash esadecimale di una password.
+    private const int Iterations = 100_000;
+
     public static string Hash(string password)
     {
-        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(password));
-        return Convert.ToHexString(bytes); // stringa esadecimale maiuscola (64 caratteri)
+        var salt = RandomNumberGenerator.GetBytes(16);
+        var hash = Rfc2898DeriveBytes.Pbkdf2(password, salt, Iterations, HashAlgorithmName.SHA256, 32);
+        return $"PBKDF2${Iterations}${Convert.ToBase64String(salt)}${Convert.ToBase64String(hash)}";
     }
 
-    // Verifica una password confrontando il suo hash con quello salvato.
     public static bool Verify(string password, string storedHash)
-        => string.Equals(Hash(password), storedHash, StringComparison.OrdinalIgnoreCase);
+    {
+        if (!storedHash.Contains('$'))
+        {
+            // Formato precedente: SHA-256 esadecimale, senza salt.
+            var legacy = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(password)));
+            return string.Equals(legacy, storedHash, StringComparison.OrdinalIgnoreCase);
+        }
+
+        var parts = storedHash.Split('$');
+        if (parts.Length != 4 || parts[0] != "PBKDF2" || !int.TryParse(parts[1], out var iterations))
+            return false;
+
+        var salt = Convert.FromBase64String(parts[2]);
+        var expected = Convert.FromBase64String(parts[3]);
+        var actual = Rfc2898DeriveBytes.Pbkdf2(password, salt, iterations, HashAlgorithmName.SHA256, expected.Length);
+        return CryptographicOperations.FixedTimeEquals(actual, expected);
+    }
+
+    /// <summary>True se l'hash e' nel vecchio formato e va rigenerato al prossimo login.</summary>
+    public static bool NeedsRehash(string storedHash) => !storedHash.Contains('$');
 }

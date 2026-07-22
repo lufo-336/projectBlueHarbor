@@ -176,7 +176,7 @@ export default function OperatorView() {
                           {STATUS_LABELS[ship.status]}
                         </span>
                       </td>
-                      <td className="mono">{ship.berthId ? `#${ship.berthId}` : '—'}</td>
+                      <td>{ship.berthName ?? '—'}</td>
                       <td className="operator__notes" title={ship.notes || ''}>{ship.notes || '—'}</td>
                       <td>
                         {ship.status === 'Pending' ? (

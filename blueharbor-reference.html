@@ -464,7 +464,7 @@
         <span><strong>Repo</strong> lufo-336/projectBlueHarbor</span>
         <span><strong>Stack</strong> React + Vite · ASP.NET Core · SQL Server</span>
         <span><strong>Redatto</strong> 7 luglio 2026</span>
-        <span><strong>Rivisto</strong> 17 luglio 2026 — 8 evoluzioni, ruolo Admin, verifica visiva delle UI</span>
+        <span><strong>Rivisto</strong> 22 luglio 2026 — rifiniture: reset simulazione, timeline navigabile, nomi banchina, data reale, hashing PBKDF2</span>
       </div>
     </div>
 
@@ -504,7 +504,7 @@
         <div class="statuscard">
           <div class="statuscard__label">Sicurezza login</div>
           <div class="statuscard__value"><span class="chip chip--good">Attiva</span></div>
-          <div class="statuscard__note">JWT + endpoint protetti per ruolo (401/403). Hashing SHA-256 senza salt (didattico)</div>
+          <div class="statuscard__note">JWT + endpoint protetti per ruolo (401/403). Hashing PBKDF2 con salt, migrazione rehash-on-login</div>
         </div>
         <div class="statuscard">
           <div class="statuscard__label">Sprint completati</div>
@@ -580,7 +580,7 @@
         <li><code>ShipGeneratorService</code> — genera size/arrivo/durata casuali per una nave nuova</li>
         <li><code>SchedulingRules</code> — funzioni pure: compatibilità di size + algoritmo di accodamento (nessun accesso al DB, facili da testare)</li>
         <li><code>TimeService</code> — avanzamento del giorno virtuale, transazionale (o avanza e rilascia le navi insieme, o non cambia nulla)</li>
-        <li><code>TokenService</code> / <code>PasswordHasher</code> — emissione/verifica JWT, hashing SHA-256 (senza salt: semplificazione dichiaratamente didattica)</li>
+        <li><code>TokenService</code> / <code>PasswordHasher</code> — emissione/verifica JWT, hashing PBKDF2 (salt casuale, 100k iterazioni); retro-compatibile col vecchio formato SHA-256, rigenerato al primo login (rehash-on-login)</li>
         <li><code>GlobalExceptionHandler</code> — rete di sicurezza: converte eccezioni non gestite in un 500 pulito, mai uno stack trace al client</li>
       </ul>
     </section>
@@ -594,7 +594,7 @@
           <tbody>
             <tr><td><code>Berths</code></td><td>Id, Name, Size</td><td>Size ∈ {XL,L,M,S} · Name univoco · 8 righe fisse, seeding una tantum</td></tr>
             <tr><td><code>Ships</code></td><td>Id, Name, Size, ArrivalDay, Duration, Status, BerthId (FK, null), OccupationStartDay (null), Notes</td><td>Size ∈ {XL,L,M,S} · Status ∈ {Pending,Assigned,Departed} · ArrivalDay ≥ 0 · 3 ≤ Duration ≤ 15 · FK_Ships_Berths</td></tr>
-            <tr><td><code>Settings</code></td><td>Key (PK), Value</td><td>Riga unica in uso: <code>CurrentVirtualDay</code></td></tr>
+            <tr><td><code>Settings</code></td><td>Key (PK), Value</td><td>Righe in uso: <code>CurrentVirtualDay</code>, <code>Day1Date</code> (data calendario del giorno 1, solo presentazione)</td></tr>
             <tr><td><code>Users</code></td><td>Id, Username, PasswordHash, Role, IsActive</td><td>Username univoco · Role ∈ {Operator,Scheduler,Admin} · IsActive (disattivato = niente login) · <code>database/script7.sql</code></td></tr>
             <tr><td><code>AssignmentHistory</code></td><td>Id, ShipId, ShipName, Size, BerthId, BerthName, OccupationStartDay, OccupationEndDay, EventType, EventDay, CreatedAt</td><td>Append-only (niente update/delete) · EventType ∈ {Assigned,Departed} · snapshot denormalizzati (nome nave/banchina) · <code>database/script6.sql</code></td></tr>
           </tbody>
@@ -667,8 +667,8 @@
             <tr><td><code>POST</code></td><td><code>/api/auth/login</code></td><td>pubblico</td><td>Verifica credenziali, rilascia JWT (scade dopo 8h)</td></tr>
             <tr><td><code>GET</code></td><td><code>/api/auth/me</code></td><td>pubblico</td><td>Verifica la sessione all'avvio dell'app</td></tr>
             <tr><td><code>POST</code></td><td><code>/api/auth/logout</code></td><td>pubblico</td><td>Simbolico: col JWT stateless, il client scarta solo il token</td></tr>
-            <tr><td><code>GET</code></td><td><code>/api/system/current-day</code></td><td>autenticato</td><td>Giorno virtuale corrente</td></tr>
-            <tr><td><code>GET</code></td><td><code>/api/ships</code></td><td>Operatore</td><td>Elenco navi paginato e filtrabile (<code>?status=&amp;size=&amp;page=&amp;pageSize=</code>), ordine per Id; risposta con <code>items</code>, meta di pagina e <code>counts</code> per stato</td></tr>
+            <tr><td><code>GET</code></td><td><code>/api/system/current-day</code></td><td>autenticato</td><td>Giorno virtuale corrente + <code>day1Date</code> (data calendario del giorno 1, nullable)</td></tr>
+            <tr><td><code>GET</code></td><td><code>/api/ships</code></td><td>Operatore</td><td>Elenco navi paginato e filtrabile (<code>?status=&amp;size=&amp;page=&amp;pageSize=</code>), ordine per Id; risposta con <code>items</code> (incluso <code>berthName</code> per le navi assegnate), meta di pagina e <code>counts</code> per stato</td></tr>
             <tr><td><code>POST</code></td><td><code>/api/ships</code></td><td>Operatore</td><td>Crea nave: nome (obbligatorio) e nota (facoltativa, ≤255) sono manuali, il resto è generato</td></tr>
             <tr><td><code>DELETE</code></td><td><code>/api/ships/{id}</code></td><td>Operatore</td><td>Annulla una nave <strong>solo se Pending</strong> (hard delete); se già Assigned/Departed → 409</td></tr>
             <tr><td><code>GET</code></td><td><code>/api/scheduler/dashboard</code></td><td>Scheduler</td><td>Navi Pending + stato di tutte le banchine in un'unica risposta</td></tr>
@@ -679,6 +679,7 @@
             <tr><td><code>POST</code></td><td><code>/api/admin/users</code></td><td>Admin</td><td>Crea utente (username, ruolo, password iniziale)</td></tr>
             <tr><td><code>PUT</code></td><td><code>/api/admin/users/{id}</code></td><td>Admin</td><td>Cambia ruolo / (dis)attiva / reset password; guardrail anti auto-lockout e ultimo Admin</td></tr>
             <tr><td><code>DELETE</code></td><td><code>/api/admin/users/{id}</code></td><td>Admin</td><td>Disattiva l'utente (soft delete)</td></tr>
+            <tr><td><code>POST</code></td><td><code>/api/admin/simulation/reset</code></td><td>Admin</td><td>Riporta la simulazione allo stato iniziale: cancella navi e storico, giorno a 1; banchine e utenti intatti</td></tr>
             <tr><td><code>POST</code></td><td><code>/api/time/next-day</code></td><td>autenticato</td><td>Avanza il giorno virtuale, rilascia le navi concluse e registra gli eventi di partenza</td></tr>
           </tbody>
         </table>
@@ -690,8 +691,9 @@
           valido gli endpoint rispondono <strong>401</strong> (verificato il 15 luglio:
           <code>GET /api/ships</code>, <code>/api/scheduler/dashboard</code> e
           <code>/api/system/current-day</code> → 401 senza login), e con il ruolo sbagliato
-          <strong>403</strong>. Pubblico resta solo <code>/api/auth/*</code>. L'unica
-          semplificazione dichiaratamente didattica è l'hashing SHA-256 senza salt.
+          <strong>403</strong>. Pubblico resta solo <code>/api/auth/*</code>. Le password sono
+          salvate con PBKDF2 (salt casuale, 100k iterazioni) dal 22 luglio; i vecchi hash
+          SHA-256 migrano da soli al primo login.
         </p>
         <p>
           Il ruolo <strong>Admin</strong> è di piattaforma: ha l'unione delle capacità di
@@ -760,19 +762,19 @@
           </tbody>
         </table>
       </div>
-      <p>Il cuore dell'applicazione (Sprint 1–5) è completo e funziona end-to-end — verificato girando l'app dal vivo, non solo leggendo il codice. Sprint 6 è quasi completo: login e <strong>protezione degli endpoint per ruolo</strong> (401/403) funzionano; resta la semplificazione dell'hashing SHA-256 senza salt e il seed utenti lato DB. Sono state poi consegnate — sul branch <code>feature/ship-notes</code> — le evoluzioni degli Sprint 7 (nota facoltativa in creazione nave, paginazione/filtri e validazione su <code>GET /api/ships</code>, annullamento di una nave solo se Pending) e 8 (storico assegnazioni append-only con export CSV, tutto verificato dal vivo), più un primo passo dello Sprint 10 (timeline Scheduler più leggibile: stato libero/occupato distinguibile senza colore — la <em>forma</em> del pallino, non la tinta — colonna "oggi" etichettata a testo, legenda, e blocchi occupazione con contrasto adeguato anche in tema scuro), lo Sprint 9 (packaging Docker: <code>docker compose up --build</code> avvia DB + app su una macchina pulita) e il ruolo <strong>Admin</strong> di piattaforma (gestione utenti + capacità di Operatore e Scheduler). Resta aperta solo la rifinitura finale dell'accessibilità (Sprint 10).</p>
+      <p>Il cuore dell'applicazione (Sprint 1–5) è completo e funziona end-to-end — verificato girando l'app dal vivo, non solo leggendo il codice. Sprint 6 è completo: login, <strong>protezione degli endpoint per ruolo</strong> (401/403) e hashing PBKDF2 con salt (dal 22 luglio, con migrazione trasparente dei vecchi hash al primo login). Sono state poi consegnate — sul branch <code>feature/ship-notes</code> — le evoluzioni degli Sprint 7 (nota facoltativa in creazione nave, paginazione/filtri e validazione su <code>GET /api/ships</code>, annullamento di una nave solo se Pending) e 8 (storico assegnazioni append-only con export CSV, tutto verificato dal vivo), più un primo passo dello Sprint 10 (timeline Scheduler più leggibile: stato libero/occupato distinguibile senza colore — la <em>forma</em> del pallino, non la tinta — colonna "oggi" etichettata a testo, legenda, e blocchi occupazione con contrasto adeguato anche in tema scuro), lo Sprint 9 (packaging Docker: <code>docker compose up --build</code> avvia DB + app su una macchina pulita) e il ruolo <strong>Admin</strong> di piattaforma (gestione utenti + capacità di Operatore e Scheduler). Resta aperta solo la rifinitura finale dell'accessibilità (Sprint 10).</p>
     </section>
 
     <section id="rischi">
       <div class="section-head"><span class="section-num">10</span><h2>Rischi noti</h2></div>
       <p>Cose che è meglio nominare tu prima che le trovi lo sponsor.</p>
       <div class="callout">
-        <div class="callout__label">Hashing password semplificato</div>
-        <p>Gli endpoint applicativi sono protetti (<code>[Authorize]</code> per ruolo, 401/403 verificati il 15 luglio). Resta didattica la scelta di hashing password <strong>SHA-256 senza salt</strong>: in uno scenario reale si userebbe bcrypt/PBKDF2. Nota: l'autenticazione non è comunque un requisito della consegna.</p>
+        <div class="callout__label">Hashing password — risolto il 22 luglio</div>
+        <p>Gli endpoint applicativi sono protetti (<code>[Authorize]</code> per ruolo, 401/403 verificati il 15 luglio). La semplificazione didattica SHA-256 senza salt è stata sostituita da <strong>PBKDF2</strong> (salt casuale, 100k iterazioni); i vecchi hash migrano da soli al primo login (rehash-on-login), nessun utente perde l'accesso.</p>
       </div>
-      <div class="callout callout--warn">
-        <div class="callout__label">Nessun test automatico</div>
-        <p>Zero unit test, zero framework di test installato. L'algoritmo di accodamento sarebbe il candidato naturale — è una funzione pura, facile da testare in isolamento.</p>
+      <div class="callout">
+        <div class="callout__label">Test automatici — avviati il 17 luglio</div>
+        <p>26 unit test xUnit: 20 sull'algoritmo di accodamento (<code>SchedulingRules</code>, PR #3) e 6 su <code>PasswordHasher</code> (22 luglio). <code>dotnet test</code> fa parte della verifica standard. Restano scoperti i controller (servirebbero test d'integrazione).</p>
       </div>
       <div class="callout">
         <div class="callout__label">Registrazione non disponibile</div>

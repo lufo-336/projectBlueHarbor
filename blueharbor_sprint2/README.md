@@ -71,10 +71,10 @@ Prerequisiti: .NET SDK 10, Node.js 20+, SQL Server locale (istanza di default) c
 2. Login Scheduler → seleziona la nave → le banchine compatibili si evidenziano
    con l'anteprima tratteggiata del primo giorno libero → "Assegna". La timeline
    mostra occupazioni, colonna "oggi" e stato libero/occupato di ogni banchina.
-   ⚠️ In demo: la timeline mostra **14 giorni** da oggi, ma il sistema genera arrivi
-   fino a **+30**. Una nave assegnata con arrivo lontano è corretta ma *non si vede*
-   nella timeline — per mostrare il blocco, scegli una nave con arrivo vicino
-   (o avanza con "Next Day" finché rientra nell'orizzonte).
+   La timeline mostra **14 giorni** alla volta ma è **navigabile a finestre**
+   (frecce `‹`/`›`, pulsante "oggi"): una nave con arrivo lontano (fino a **+30**)
+   si vede spostandosi sulla finestra successiva. Il giorno proposto
+   dall'anteprima non cambia spostando la finestra.
 3. Caso di accodamento: assegna una seconda nave alla stessa banchina →
    l'anteprima (e l'assegnazione) parte DOPO la fine dell'occupazione esistente.
 4. "Next Day" fino a fine sosta → la nave diventa `Departed` e libera la banchina.
@@ -82,11 +82,17 @@ Prerequisiti: .NET SDK 10, Node.js 20+, SQL Server locale (istanza di default) c
 5. Login Admin → crea un utente, cambia ruolo, disattiva/riattiva; passa alle
    viste Operatore/Scheduler dallo switcher.
 6. Refresh della pagina dopo il login → si resta dentro l'app (niente flash login).
+7. **Reset simulazione** (Admin, tab "Gestione utenti"): riporta l'ambiente a
+   giorno 1 senza navi né storico — banchine e utenti restano intatti. Utile per
+   ripartire puliti prima o dopo una demo.
 
 ## Note tecniche per chi sviluppa
 
 - Il contratto API è documentato in ogni controller; il frontend vi accede solo
   tramite `frontend/src/services/api.js`.
+- **Test**: `dotnet test` (da `blueharbor_sprint2/`) esegue i 26 unit test xUnit
+  (algoritmo di accodamento + password hashing). Fa parte della verifica standard
+  prima di ogni commit.
 - L'algoritmo di accodamento vive in `Services/SchedulingRules.cs` (funzioni
   pure). Il frontend ne tiene una replica in `frontend/src/services/scheduling.js`
   SOLO per l'anteprima: se si cambia la regola, aggiornare entrambi

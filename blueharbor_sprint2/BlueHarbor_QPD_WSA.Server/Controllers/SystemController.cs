@@ -18,8 +18,9 @@ public class SystemController : ControllerBase
     }
 
     /// <summary>
-    /// Restituisce il giorno corrente virtuale letto dalla tabella Settings.
-    /// Risposta: { "currentDay": 1 }
+    /// Restituisce il giorno corrente virtuale letto dalla tabella Settings,
+    /// più la data di calendario del giorno 1 (nullable: solo presentazione).
+    /// Risposta: { "currentDay": 1, "day1Date": "2026-06-08" }
     /// </summary>
     [HttpGet("current-day")]
     public async Task<IActionResult> GetCurrentDay()
@@ -34,6 +35,7 @@ public class SystemController : ControllerBase
                 statusCode: StatusCodes.Status500InternalServerError);
         }
 
-        return Ok(new { currentDay });
+        var day1 = await _context.Settings.FirstOrDefaultAsync(s => s.Key == "Day1Date");
+        return Ok(new { currentDay, day1Date = day1?.Value });
     }
 }

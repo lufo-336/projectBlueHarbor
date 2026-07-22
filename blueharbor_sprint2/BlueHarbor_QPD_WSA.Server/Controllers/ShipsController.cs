@@ -110,7 +110,8 @@ public class ShipsController : ControllerBase
             .Take(pageSize)
             .Select(s => new ShipDto(
                 s.Id, s.Name, s.Size, s.ArrivalDay, s.Duration,
-                s.Status.ToString(), s.BerthId, s.OccupationStartDay, s.Notes))
+                s.Status.ToString(), s.BerthId, s.OccupationStartDay, s.Notes,
+                s.Berth != null ? s.Berth.Name : null))
             .ToListAsync();
 
         return Ok(new ShipPageResponse(items, page, pageSize, total, totalPages, counts));
