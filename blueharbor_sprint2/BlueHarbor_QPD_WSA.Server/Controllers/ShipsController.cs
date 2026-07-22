@@ -261,8 +261,18 @@ public class ShipsController : ControllerBase
             .Select(s => new { s.OccupationStartDay, s.Duration })
             .ToListAsync();
 
+        // --- 6b) Manutenzioni programmate su questa banchina. Hanno la STESSA semantica
+        //     [Start, End) delle occupazioni, quindi entrano nella stessa lista:
+        //     per SchedulingRules una banchina in manutenzione blocca come una nave.
+        //     È il motivo per cui l'algoritmo non è cambiato di una riga.
+        var maintenances = await _context.BerthMaintenance
+            .Where(m => m.BerthId == berth.Id)
+            .Select(m => new { m.StartDay, m.EndDay })
+            .ToListAsync();
+
         var intervals = occupations
             .Select(o => (Start: o.OccupationStartDay!.Value, End: o.OccupationStartDay!.Value + o.Duration))
+            .Concat(maintenances.Select(m => (Start: m.StartDay, End: m.EndDay)))
             .ToList();
 
         // --- Algoritmo di accodamento (TASK 2): calcola il primo giorno libero ---
