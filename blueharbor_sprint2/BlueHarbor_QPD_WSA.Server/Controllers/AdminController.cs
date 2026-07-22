@@ -131,6 +131,32 @@ public class AdminController : ControllerBase
     }
 
     // ==========================================================================
+    //  POST /api/admin/simulation/reset — riporta la simulazione allo stato iniziale
+    //  Cancella navi e storico, CurrentVirtualDay = 1. NON tocca banchine (set fisso)
+    //  ne' utenti (il reset riguarda la simulazione, non gli accessi).
+    // ==========================================================================
+    [HttpPost("simulation/reset")]
+    public async Task<IActionResult> ResetSimulation()
+    {
+        await using var tx = await _context.Database.BeginTransactionAsync();
+
+        // Prima lo storico (ha FK verso Ships), poi le navi.
+        var removedHistory = await _context.AssignmentHistory.ExecuteDeleteAsync();
+        var removedShips = await _context.Ships.ExecuteDeleteAsync();
+
+        var day = await _context.Settings.FirstOrDefaultAsync(s => s.Key == "CurrentVirtualDay");
+        if (day is null)
+            return Problem(
+                detail: "CurrentVirtualDay non è configurato correttamente nel database.",
+                statusCode: StatusCodes.Status500InternalServerError);
+        day.Value = "1";
+        await _context.SaveChangesAsync();
+
+        await tx.CommitAsync();
+        return Ok(new { removedShips, removedHistory });
+    }
+
+    // ==========================================================================
     //  Guardrail: nessun auto-lockout, mai zero Admin attivi.
     //  Ritorna un 409 se l'operazione toglierebbe l'accesso Admin in modo vietato,
     //  altrimenti null.
