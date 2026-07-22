@@ -41,6 +41,14 @@ Ogni proposta rispetta questi paletti — o dichiara apertamente dove li sfiora.
 | 12 | Annulla nave **solo se Pending**          | Basso           | ⚠️    | S      | —         |
 | 13 | Export CSV dello storico                  | Basso           | ✅    | S      | dopo #1   |
 
+> **Stato di attuazione**
+> - ✅ **#1, #3, #4, #5, #6, #8, #11, #12, #13** — implementate e mergiate con la **PR #2** (17/07).
+> - ✅ **#2** unit test su `SchedulingRules` — chiusa con la **PR #3** (17/07, 20 test xUnit).
+> - ✅ **#7** reset simulazione (endpoint Admin + pulsante UI, non più script) e
+>   ✅ **#10** data reale accanto al giorno virtuale — chiuse col branch **rifiniture** (22/07),
+>   insieme all'hashing PBKDF2 e alla timeline navigabile (fuori lista: emerse il 17/07).
+> - ⏳ **#9** accessibilità — resta l'unica aperta (Sprint 10).
+
 ## Tier 1 — nel cuore del progetto (consigliati)
 
 Colpiscono i criteri che la consegna valuta esplicitamente, senza toccare il dominio.
