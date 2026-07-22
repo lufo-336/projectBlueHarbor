@@ -18,13 +18,21 @@ public record PendingShipDto(
     int ArrivalDay,
     int Duration);
 
-/// <summary>Stato di una banchina con la sua coda di occupazioni attive.</summary>
+/// <summary>Stato di una banchina con la sua coda di occupazioni attive e le manutenzioni.</summary>
 public record BerthStatusDto(
     int Id,
     string Name,
     string Size,
     bool IsOccupiedNow,
-    IReadOnlyList<BerthAssignmentDto> Assignments);
+    bool IsUnderMaintenanceNow,
+    IReadOnlyList<BerthAssignmentDto> Assignments,
+    IReadOnlyList<BerthMaintenanceDto> Maintenances);
+
+/// <summary>Finestra di indisponibilità sulla banchina: intervallo [StartDay, EndDay).</summary>
+public record BerthMaintenanceDto(
+    int Id,
+    int StartDay,
+    int EndDay);
 
 /// <summary>Una singola occupazione sulla banchina: intervallo [StartDay, EndDay).</summary>
 public record BerthAssignmentDto(

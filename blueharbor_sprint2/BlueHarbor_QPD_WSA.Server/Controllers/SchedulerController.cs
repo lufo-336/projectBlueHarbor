@@ -60,6 +60,9 @@ public class SchedulerController : ControllerBase
                 Ships = b.Ships
                     .Where(s => s.Status == ShipStatus.Assigned)
                     .Select(s => new { s.Id, s.Name, s.OccupationStartDay, s.Duration })
+                    .ToList(),
+                Maintenances = b.Maintenances
+                    .Select(m => new { m.Id, m.StartDay, m.EndDay })
                     .ToList()
             })
             .ToListAsync();
@@ -80,7 +83,17 @@ public class SchedulerController : ControllerBase
                 bool isOccupiedNow = assignments
                     .Any(a => a.StartDay <= currentDay && currentDay < a.EndDay);
 
-                return new BerthStatusDto(b.Id, b.Name, b.Size, isOccupiedNow, assignments);
+                var maintenances = b.Maintenances
+                    .Select(m => new BerthMaintenanceDto(m.Id, m.StartDay, m.EndDay))
+                    .OrderBy(m => m.StartDay)
+                    .ToList();
+
+                // In manutenzione ORA se una finestra copre il giorno corrente: [Start, End).
+                bool isUnderMaintenanceNow = maintenances
+                    .Any(m => m.StartDay <= currentDay && currentDay < m.EndDay);
+
+                return new BerthStatusDto(b.Id, b.Name, b.Size, isOccupiedNow,
+                                          isUnderMaintenanceNow, assignments, maintenances);
             })
             .ToList();
 
