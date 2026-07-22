@@ -14,4 +14,5 @@ public record ShipDto(
     string Status,
     int? BerthId,
     int? OccupationStartDay,
-    string? Notes);
+    string? Notes,
+    string? BerthName);
