@@ -131,6 +131,114 @@ public class AdminController : ControllerBase
     }
 
     // ==========================================================================
+    //  GET /api/admin/maintenance — finestre programmate (filtro ?berthId=)
+    // ==========================================================================
+    [HttpGet("maintenance")]
+    public async Task<IActionResult> GetMaintenance([FromQuery] int? berthId)
+    {
+        var query = _context.BerthMaintenance.AsQueryable();
+        if (berthId is not null) query = query.Where(m => m.BerthId == berthId);
+
+        var list = await query
+            .OrderBy(m => m.StartDay).ThenBy(m => m.Id)
+            .Select(m => new MaintenanceDto(m.Id, m.BerthId, m.Berth!.Name, m.StartDay, m.EndDay))
+            .ToListAsync();
+
+        return Ok(list);
+    }
+
+    // ==========================================================================
+    //  POST /api/admin/maintenance — programma una finestra di indisponibilità
+    //  Regola d'oro: una nave già assegnata non si tocca MAI. Se la finestra la
+    //  incrocia si rifiuta (409) e sarà l'Admin a scegliere altri giorni.
+    // ==========================================================================
+    [HttpPost("maintenance")]
+    public async Task<IActionResult> CreateMaintenance([FromBody] CreateMaintenanceRequest request)
+    {
+        var berth = await _context.Berths.FindAsync(request.BerthId);
+        if (berth is null)
+            return Problem(detail: $"Banchina con id {request.BerthId} non trovata.",
+                           statusCode: StatusCodes.Status404NotFound);
+
+        if (request.EndDay <= request.StartDay)
+            return Problem(detail: "Il giorno di fine deve essere successivo a quello di inizio.",
+                           statusCode: StatusCodes.Status400BadRequest);
+
+        var currentDay = await GetCurrentDayAsync();
+        if (currentDay is null)
+            return Problem(detail: "CurrentVirtualDay non è configurato correttamente nel database.",
+                           statusCode: StatusCodes.Status500InternalServerError);
+
+        if (request.StartDay < currentDay)
+            return Problem(detail: $"Non si può programmare una manutenzione nel passato (giorno corrente: {currentDay}).",
+                           statusCode: StatusCodes.Status400BadRequest);
+
+        // Conflitto con navi ASSEGNATE su questa banchina. Solo Assigned: le Departed
+        // hanno finito, le Pending non hanno ancora una banchina.
+        var assigned = await _context.Ships
+            .Where(s => s.BerthId == berth.Id && s.Status == ShipStatus.Assigned)
+            .Select(s => new { s.Name, s.OccupationStartDay, s.Duration })
+            .ToListAsync();
+
+        // [a1,a2) e [b1,b2) si sovrappongono se a1 < b2 && b1 < a2.
+        var clashing = assigned
+            .Where(s => s.OccupationStartDay!.Value < request.EndDay
+                     && request.StartDay < s.OccupationStartDay!.Value + s.Duration)
+            .Select(s => s.Name)
+            .ToList();
+
+        if (clashing.Count > 0)
+            return Problem(
+                detail: $"La finestra confligge con navi già assegnate a {berth.Name}: {string.Join(", ", clashing)}. Le navi assegnate non si spostano: scegli altri giorni.",
+                statusCode: StatusCodes.Status409Conflict);
+
+        var overlaps = await _context.BerthMaintenance.AnyAsync(m =>
+            m.BerthId == berth.Id && m.StartDay < request.EndDay && request.StartDay < m.EndDay);
+
+        if (overlaps)
+            return Problem(detail: $"Esiste già una manutenzione sovrapposta su {berth.Name}.",
+                           statusCode: StatusCodes.Status409Conflict);
+
+        var maintenance = new BerthMaintenance
+        {
+            BerthId = berth.Id,
+            StartDay = request.StartDay,
+            EndDay = request.EndDay,
+        };
+        _context.BerthMaintenance.Add(maintenance);
+        await _context.SaveChangesAsync();
+
+        return CreatedAtAction(nameof(GetMaintenance), new { id = maintenance.Id },
+            new MaintenanceDto(maintenance.Id, berth.Id, berth.Name,
+                               maintenance.StartDay, maintenance.EndDay));
+    }
+
+    // ==========================================================================
+    //  DELETE /api/admin/maintenance/{id} — revoca una finestra NON ancora iniziata
+    // ==========================================================================
+    [HttpDelete("maintenance/{id:int}")]
+    public async Task<IActionResult> DeleteMaintenance(int id)
+    {
+        var maintenance = await _context.BerthMaintenance.FindAsync(id);
+        if (maintenance is null)
+            return Problem(detail: $"Manutenzione con id {id} non trovata.",
+                           statusCode: StatusCodes.Status404NotFound);
+
+        var currentDay = await GetCurrentDayAsync();
+        if (currentDay is null)
+            return Problem(detail: "CurrentVirtualDay non è configurato correttamente nel database.",
+                           statusCode: StatusCodes.Status500InternalServerError);
+
+        if (maintenance.StartDay <= currentDay)
+            return Problem(detail: "Una manutenzione già iniziata non si revoca.",
+                           statusCode: StatusCodes.Status409Conflict);
+
+        _context.BerthMaintenance.Remove(maintenance);
+        await _context.SaveChangesAsync();
+        return NoContent();
+    }
+
+    // ==========================================================================
     //  POST /api/admin/simulation/reset — riporta la simulazione allo stato iniziale
     //  Cancella navi e storico, CurrentVirtualDay = 1. NON tocca banchine (set fisso)
     //  ne' utenti (il reset riguarda la simulazione, non gli accessi).
@@ -180,5 +288,16 @@ public class AdminController : ControllerBase
             return Problem(detail: "Operazione negata: resterebbe zero Admin attivi.", statusCode: StatusCodes.Status409Conflict);
 
         return null;
+    }
+
+    // ==========================================================================
+    //  Giorno virtuale corrente. Stessa lettura degli altri controller.
+    // ==========================================================================
+    private async Task<int?> GetCurrentDayAsync()
+    {
+        var setting = await _context.Settings
+            .FirstOrDefaultAsync(s => s.Key == "CurrentVirtualDay");
+
+        return setting is not null && int.TryParse(setting.Value, out var day) ? day : null;
     }
 }
