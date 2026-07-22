@@ -6,7 +6,8 @@ import { useToast } from '../context/ToastContext.jsx';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import './SchedulerView.css';
 
-// Colonne visibili della timeline: currentDay .. currentDay+13.
+// Colonne visibili della timeline: windowStart .. windowStart+13, dove
+// windowStart = currentDay + horizonOffset (navigazione a finestre intere).
 // NB: deve combaciare con repeat(14, ...) in SchedulerView.css.
 const TIMELINE_DAYS = 14;
 
@@ -21,6 +22,8 @@ export default function SchedulerView() {
   const [history, setHistory] = useState(null); // storico assegnazioni (sola lettura)
   const [eventFilter, setEventFilter] = useState('');
   const [exporting, setExporting] = useState(false);
+  // Finestra visibile della timeline: multipli di TIMELINE_DAYS oltre "oggi".
+  const [horizonOffset, setHorizonOffset] = useState(0);
 
   const loadDashboard = useCallback(async () => {
     try {
@@ -42,6 +45,15 @@ export default function SchedulerView() {
   // Ricarica al mount, a ogni Next Day (nuove partenze) e dopo un'assegnazione.
   useEffect(() => { loadDashboard(); }, [loadDashboard, currentDay]);
   useEffect(() => { loadHistory(); }, [loadHistory, currentDay]);
+
+  // Al cambio del giorno reale (Next Day) la finestra torna su "oggi".
+  // Aggiustamento durante il render (pattern React "adjusting state when a
+  // prop changes"): niente effect, niente render a cascata.
+  const [lastSeenDay, setLastSeenDay] = useState(currentDay);
+  if (lastSeenDay !== currentDay) {
+    setLastSeenDay(currentDay);
+    setHorizonOffset(0);
+  }
 
   async function handleAssign(berth, selectedShip) {
     if (!selectedShip || assigning) return;
@@ -81,8 +93,8 @@ export default function SchedulerView() {
 
   if (dashboard === null) return <LoadingSpinner />;
 
-  const day0 = dashboard.currentDay;
-  const days = Array.from({ length: TIMELINE_DAYS }, (_, i) => day0 + i);
+  const windowStart = dashboard.currentDay + horizonOffset;
+  const days = Array.from({ length: TIMELINE_DAYS }, (_, i) => windowStart + i);
   const selectedShip = dashboard.pendingShips.find((s) => s.id === selectedShipId) ?? null;
 
   return (
@@ -119,6 +131,17 @@ export default function SchedulerView() {
       <section className="card scheduler__timeline">
         <div className="scheduler__timeline-head">
           <h2>Timeline banchine</h2>
+          <div className="timeline-nav">
+            <button className="btn btn-sm" disabled={horizonOffset === 0}
+                    onClick={() => setHorizonOffset((o) => Math.max(0, o - TIMELINE_DAYS))}
+                    aria-label="Finestra precedente">‹</button>
+            <span className="mono">g{windowStart}–g{windowStart + TIMELINE_DAYS - 1}</span>
+            <button className="btn btn-sm" disabled={horizonOffset === 0}
+                    onClick={() => setHorizonOffset(0)}>oggi</button>
+            <button className="btn btn-sm"
+                    onClick={() => setHorizonOffset((o) => o + TIMELINE_DAYS)}
+                    aria-label="Finestra successiva">›</button>
+          </div>
           <ul className="timeline-legend">
             <li><span className="lg lg--occupied" aria-hidden="true" />Occupazione</li>
             <li><span className="lg lg--preview" aria-hidden="true" />Anteprima accodamento</li>
@@ -131,10 +154,10 @@ export default function SchedulerView() {
             <div className="timeline__row timeline__row--head">
               <div className="timeline__label" />
               {days.map((day, i) => (
-                <div key={day} className={`timeline__head mono ${i === 0 ? 'is-today' : ''}`}
+                <div key={day} className={`timeline__head mono ${day === dashboard.currentDay ? 'is-today' : ''}`}
                      style={{ gridColumn: i + 2 }}>
                   g{day}
-                  {i === 0 && <span className="timeline__today-tag">oggi</span>}
+                  {day === dashboard.currentDay && <span className="timeline__today-tag">oggi</span>}
                 </div>
               ))}
             </div>
@@ -145,7 +168,7 @@ export default function SchedulerView() {
               // Anteprima di accodamento: primo giorno libero per la nave selezionata.
               const previewStart = compatible
                 ? computeOccupationStartDay(
-                    selectedShip.arrivalDay, selectedShip.duration, day0,
+                    selectedShip.arrivalDay, selectedShip.duration, dashboard.currentDay,
                     berth.assignments.map((a) => ({ start: a.startDay, end: a.endDay })))
                 : null;
 
@@ -169,19 +192,19 @@ export default function SchedulerView() {
 
                   {/* Celle di sfondo, una per giorno */}
                   {days.map((day, i) => (
-                    <div key={day} className={`timeline__cell ${i === 0 ? 'is-today' : ''}`}
+                    <div key={day} className={`timeline__cell ${day === dashboard.currentDay ? 'is-today' : ''}`}
                          style={{ gridColumn: i + 2 }} />
                   ))}
 
                   {/* Occupazioni reali: blocchi pieni. gridColumn è POSIZIONAMENTO
                       calcolato dai dati (giorni -> colonne), non stile. */}
                   {berth.assignments.map((a) => {
-                    const start = Math.max(a.startDay, day0);
-                    const end = Math.min(a.endDay, day0 + TIMELINE_DAYS);
+                    const start = Math.max(a.startDay, windowStart);
+                    const end = Math.min(a.endDay, windowStart + TIMELINE_DAYS);
                     if (end <= start) return null; // fuori dalla finestra visibile
                     return (
                       <div key={a.shipId} className="timeline__block"
-                           style={{ gridColumn: `${start - day0 + 2} / ${end - day0 + 2}` }}
+                           style={{ gridColumn: `${start - windowStart + 2} / ${end - windowStart + 2}` }}
                            title={`${a.shipName}: giorni ${a.startDay}–${a.endDay - 1}`}
                            aria-label={`${berth.name} occupata da ${a.shipName}, giorni ${a.startDay}–${a.endDay - 1}`}>
                         {a.shipName}
@@ -192,12 +215,12 @@ export default function SchedulerView() {
                   {/* Anteprima per la nave selezionata: blocco tratteggiato */}
                   {previewStart !== null && (() => {
                     const previewEnd = previewStart + selectedShip.duration;
-                    const start = Math.max(previewStart, day0);
-                    const end = Math.min(previewEnd, day0 + TIMELINE_DAYS);
+                    const start = Math.max(previewStart, windowStart);
+                    const end = Math.min(previewEnd, windowStart + TIMELINE_DAYS);
                     if (end <= start) return null; // coda oltre la finestra visibile
                     return (
                       <div className="timeline__block timeline__block--preview"
-                           style={{ gridColumn: `${start - day0 + 2} / ${end - day0 + 2}` }}
+                           style={{ gridColumn: `${start - windowStart + 2} / ${end - windowStart + 2}` }}
                            title={`Anteprima: dal giorno ${previewStart} per ${selectedShip.duration}gg`}>
                         dal g{previewStart}
                       </div>
