@@ -12,8 +12,10 @@ Learning by Project, ITS WSA 2025-2027). Tre ruoli:
   (giorno virtuale, nessun real-time); a fine sosta la nave diventa `Departed`.
   Vede la **timeline** delle banchine e lo **storico** assegnazioni (con export CSV);
 - **Admin** — ruolo di piattaforma: **gestisce gli utenti** (crea, cambia ruolo,
-  reset password, attiva/disattiva) e ha le capacità di Operatore e Scheduler.
-  Nessun potere di dominio aggiuntivo (niente riassegnazioni o bypass delle regole).
+  reset password, attiva/disattiva), **programma le finestre di manutenzione delle
+  banchine** e ha le capacità di Operatore e Scheduler.
+  Nessun potere di dominio aggiuntivo (niente riassegnazioni o bypass delle regole:
+  una manutenzione che incrocia navi già assegnate viene rifiutata).
 
 ## Architettura
 
@@ -27,7 +29,7 @@ applicata su tutti gli endpoint (401/403). Errori come Problem Details (RFC 7807
 |---|---|
 | `BlueHarbor_QPD_WSA.Server/` | Backend: controller (ships, scheduler, history, admin, auth), servizi di dominio (`SchedulingRules`, `TimeService`), auth |
 | `frontend/` | Frontend React: viste Operatore, Scheduler (timeline + assegnazione guidata + storico) e Admin |
-| `database/` | Script T-SQL incrementali: `script5.sql` (base) + `script6.sql` (storico) + `script7.sql` (ruolo Admin) |
+| `database/` | Script T-SQL incrementali: `script5.sql` (base) + `script6.sql` (storico) + `script7.sql` (ruolo Admin) + `script8.sql` (manutenzioni banchina) |
 
 ## Avvio — opzione A: un solo comando (Docker)
 
@@ -48,7 +50,7 @@ Prerequisiti: .NET SDK 10, Node.js 20+, SQL Server locale (istanza di default) c
 
 1. **Database** (solo la prima volta): eseguire in SSMS `database/script5.sql`
    (crea il DB `BlueHarbor` con le 8 banchine e il giorno virtuale a 1) e poi
-   gli incrementali `database/script6.sql` e `database/script7.sql`.
+   gli incrementali `database/script6.sql`, `database/script7.sql` e `database/script8.sql`.
    La connection string è in `BlueHarbor_QPD_WSA.Server/appsettings.json`.
 2. **Backend**: `dotnet run --launch-profile https` dentro
    `BlueHarbor_QPD_WSA.Server/` → API su `https://localhost:7008`
@@ -85,6 +87,11 @@ Prerequisiti: .NET SDK 10, Node.js 20+, SQL Server locale (istanza di default) c
 7. **Reset simulazione** (Admin, tab "Gestione utenti"): riporta l'ambiente a
    giorno 1 senza navi né storico — banchine e utenti restano intatti. Utile per
    ripartire puliti prima o dopo una demo.
+8. Login Admin → tab **Manutenzioni** → programma una finestra su una banchina libera nei
+   prossimi giorni. Login Scheduler → la timeline mostra il blocco "Manutenzione"; assegnando una
+   nave a quella banchina, l'occupazione parte **dopo** la finestra. Prova a programmare una
+   manutenzione dove c'è già una nave assegnata: viene **rifiutata** — le navi assegnate non si
+   spostano mai.
 
 ## Note tecniche per chi sviluppa
 

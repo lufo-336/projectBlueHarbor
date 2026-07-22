@@ -464,7 +464,7 @@
         <span><strong>Repo</strong> lufo-336/projectBlueHarbor</span>
         <span><strong>Stack</strong> React + Vite · ASP.NET Core · SQL Server</span>
         <span><strong>Redatto</strong> 7 luglio 2026</span>
-        <span><strong>Rivisto</strong> 22 luglio 2026 — rifiniture: reset simulazione, timeline navigabile, nomi banchina, data reale, hashing PBKDF2</span>
+        <span><strong>Rivisto</strong> 22 luglio 2026 — rifiniture (reset, timeline navigabile, data reale, PBKDF2) + banchine in manutenzione</span>
       </div>
     </div>
 
@@ -595,6 +595,7 @@
             <tr><td><code>Berths</code></td><td>Id, Name, Size</td><td>Size ∈ {XL,L,M,S} · Name univoco · 8 righe fisse, seeding una tantum</td></tr>
             <tr><td><code>Ships</code></td><td>Id, Name, Size, ArrivalDay, Duration, Status, BerthId (FK, null), OccupationStartDay (null), Notes</td><td>Size ∈ {XL,L,M,S} · Status ∈ {Pending,Assigned,Departed} · ArrivalDay ≥ 0 · 3 ≤ Duration ≤ 15 · FK_Ships_Berths</td></tr>
             <tr><td><code>Settings</code></td><td>Key (PK), Value</td><td>Righe in uso: <code>CurrentVirtualDay</code>, <code>Day1Date</code> (data calendario del giorno 1, solo presentazione)</td></tr>
+            <tr><td><code>BerthMaintenance</code></td><td>Id (PK), BerthId (FK), StartDay, EndDay, CreatedAt</td><td>Finestre di indisponibilità [StartDay, EndDay), stessa semantica delle occupazioni; schema via <code>database/script8.sql</code></td></tr>
             <tr><td><code>Users</code></td><td>Id, Username, PasswordHash, Role, IsActive</td><td>Username univoco · Role ∈ {Operator,Scheduler,Admin} · IsActive (disattivato = niente login) · <code>database/script7.sql</code></td></tr>
             <tr><td><code>AssignmentHistory</code></td><td>Id, ShipId, ShipName, Size, BerthId, BerthName, OccupationStartDay, OccupationEndDay, EventType, EventDay, CreatedAt</td><td>Append-only (niente update/delete) · EventType ∈ {Assigned,Departed} · snapshot denormalizzati (nome nave/banchina) · <code>database/script6.sql</code></td></tr>
           </tbody>
@@ -680,6 +681,9 @@
             <tr><td><code>PUT</code></td><td><code>/api/admin/users/{id}</code></td><td>Admin</td><td>Cambia ruolo / (dis)attiva / reset password; guardrail anti auto-lockout e ultimo Admin</td></tr>
             <tr><td><code>DELETE</code></td><td><code>/api/admin/users/{id}</code></td><td>Admin</td><td>Disattiva l'utente (soft delete)</td></tr>
             <tr><td><code>POST</code></td><td><code>/api/admin/simulation/reset</code></td><td>Admin</td><td>Riporta la simulazione allo stato iniziale: cancella navi e storico, giorno a 1; banchine e utenti intatti</td></tr>
+            <tr><td><code>GET</code></td><td><code>/api/admin/maintenance</code></td><td>Admin</td><td>Finestre di manutenzione programmate (filtro <code>?berthId=</code>)</td></tr>
+            <tr><td><code>POST</code></td><td><code>/api/admin/maintenance</code></td><td>Admin</td><td>Programma una finestra [inizio, fine); 409 se incrocia navi assegnate o un'altra finestra</td></tr>
+            <tr><td><code>DELETE</code></td><td><code>/api/admin/maintenance/{id}</code></td><td>Admin</td><td>Revoca una finestra non ancora iniziata (409 se già in corso)</td></tr>
             <tr><td><code>POST</code></td><td><code>/api/time/next-day</code></td><td>autenticato</td><td>Avanza il giorno virtuale, rilascia le navi concluse e registra gli eventi di partenza</td></tr>
           </tbody>
         </table>
@@ -699,8 +703,11 @@
           Il ruolo <strong>Admin</strong> è di piattaforma: ha l'unione delle capacità di
           Operatore e Scheduler (gli endpoint sopra accettano anche <code>Admin</code>) più la
           gestione utenti (<code>/api/admin/*</code>). Non ottiene poteri di dominio vietati —
-          nessuna riassegnazione, nessun bypass delle regole, nessuna modifica del set di banchine:
-          azioni che non esistono per nessun ruolo. Un utente con <code>IsActive = false</code> non
+          nessuna riassegnazione, nessun bypass delle regole, nessuna modifica del <strong>set</strong> di
+          banchine (restano 8: 1 XL · 1 L · 2 M · 4 S): azioni che non esistono per nessun ruolo. L'Admin può
+          invece dichiarare una banchina <strong>temporaneamente indisponibile</strong> (manutenzione): è la
+          <em>disponibilità</em> a cambiare, non il set — e nessuna nave già assegnata viene mai toccata,
+          perché una finestra in conflitto viene rifiutata. Un utente con <code>IsActive = false</code> non
           può effettuare il login (403).
         </p>
       </div>
