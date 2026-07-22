@@ -9,6 +9,7 @@
 }
 .topbar__controls { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
 .topbar__day { color: var(--sahara-light); letter-spacing: 0.12em; font-weight: 700; }
+.topbar__date { color: var(--text-muted); font-weight: 400; margin-left: 0.5rem; }
 .topbar__role {
   background: var(--sahara-pale); color: var(--sahara-light);
   border: 1px solid var(--sahara-border); border-radius: 999px;

@@ -8,17 +8,20 @@ const DayContext = createContext(null);
 
 export function DayProvider({ children }) {
   const [currentDay, setCurrentDay] = useState(null); // null finché il backend non risponde
+  const [day1Date, setDay1Date] = useState(null); // data calendario del giorno 1 (nullable)
 
   useEffect(() => {
     let cancelled = false;
     api.getCurrentDay()
-      .then(({ currentDay: day }) => { if (!cancelled) setCurrentDay(day); })
+      .then(({ currentDay: day, day1Date: d1 }) => {
+        if (!cancelled) { setCurrentDay(day); setDay1Date(d1 ?? null); }
+      })
       .catch(() => { /* la topbar mostra "—"; gli errori li segnalano le viste */ });
     return () => { cancelled = true; };
   }, []);
 
   return (
-    <DayContext.Provider value={{ currentDay, setCurrentDay }}>
+    <DayContext.Provider value={{ currentDay, setCurrentDay, day1Date }}>
       {children}
     </DayContext.Provider>
   );

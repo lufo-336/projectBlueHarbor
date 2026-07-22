@@ -8,7 +8,7 @@ import './Topbar.css';
 
 export default function Topbar() {
   const { user, logout } = useAuth();
-  const { currentDay, setCurrentDay } = useDay();
+  const { currentDay, setCurrentDay, day1Date } = useDay();
   const { showSuccess, showError } = useToast();
   const [advancing, setAdvancing] = useState(false);
 
@@ -36,6 +36,12 @@ export default function Topbar() {
       <div className="topbar__controls">
         <span className="topbar__day mono">
           GIORNO {currentDay === null ? '—' : String(currentDay).padStart(2, '0')}
+          {currentDay !== null && day1Date && (
+            <span className="topbar__date">
+              {new Date(new Date(day1Date + 'T00:00:00').getTime() + (currentDay - 1) * 86400000)
+                .toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}
+            </span>
+          )}
         </span>
         <button className="btn btn-gold" onClick={handleNextDay} disabled={advancing}>
           {advancing ? 'Avanzo…' : 'Next Day →'}
