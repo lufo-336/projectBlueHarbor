@@ -31,6 +31,21 @@ applicata su tutti gli endpoint (401/403). Errori come Problem Details (RFC 7807
 | `frontend/` | Frontend React: viste Operatore, Scheduler (timeline + assegnazione guidata + storico) e Admin |
 | `database/` | Script T-SQL incrementali: `script5.sql` (base) + `script6.sql` (storico) + `script7.sql` (ruolo Admin) + `script8.sql` (manutenzioni banchina) |
 
+## Deploy cloud (produzione)
+
+L'app gira su **Azure Container Apps** con **Azure SQL Database** (tier Basic):
+
+- URL pubblico: `https://app-blueharbor.politeriver-97b0d932.swedencentral.azurecontainerapps.io`
+- **Deploy automatico**: a ogni merge su `main` che tocca `blueharbor_sprint2/`, la GitHub
+  Action `.github/workflows/deploy.yml` costruisce l'immagine, la pubblica su GHCR
+  (`ghcr.io/lufo-336/blueharbor`, taggata per SHA) e aggiorna la Container App.
+- I segreti (connection string, chiave JWT) vivono come secret della Container App e
+  arrivano al container via variabili d'ambiente: **non stanno né nel repo né nell'immagine**.
+- Telemetria: Application Insights, attiva solo dove `APPLICATIONINSIGHTS_CONNECTION_STRING`
+  è presente (in locale resta spenta).
+
+Il compose locale (opzione A) resta il **piano B della demo**.
+
 ## Avvio — opzione A: un solo comando (Docker)
 
 Richiede solo Docker. Da questa cartella (`blueharbor_sprint2/`):

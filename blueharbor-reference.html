@@ -464,7 +464,7 @@
         <span><strong>Repo</strong> lufo-336/projectBlueHarbor</span>
         <span><strong>Stack</strong> React + Vite · ASP.NET Core · SQL Server</span>
         <span><strong>Redatto</strong> 7 luglio 2026</span>
-        <span><strong>Rivisto</strong> 22 luglio 2026 — rifiniture (reset, timeline navigabile, data reale, PBKDF2) + banchine in manutenzione</span>
+        <span><strong>Rivisto</strong> 22 luglio 2026 — rifiniture (reset, timeline navigabile, data reale, PBKDF2) + banchine in manutenzione + deploy cloud su Azure</span>
       </div>
     </div>
 
@@ -830,6 +830,20 @@
           <code>admin123</code>
         </div>
       </div>
+
+      <h3>Deploy cloud (produzione)</h3>
+      <p>
+        L'app è pubblica su <strong>Azure Container Apps</strong> (1 replica sempre accesa,
+        HTTPS terminato dalla piattaforma) con <strong>Azure SQL Database</strong> (tier Basic):
+        <code>https://app-blueharbor.politeriver-97b0d932.swedencentral.azurecontainerapps.io</code>.
+        A ogni merge su <code>main</code> che tocca <code>blueharbor_sprint2/</code>, la GitHub Action
+        <code>deploy.yml</code> costruisce l'immagine, la pubblica su GHCR taggata per SHA e aggiorna la
+        Container App: ogni revisione dichiara quale commit sta servendo. I segreti (connection string,
+        chiave JWT di produzione) vivono come secret della Container App e arrivano via variabili
+        d'ambiente — mai nel repo né nell'immagine. Telemetria con Application Insights, attiva solo dove
+        la connection string è presente. Gap dichiarato: il firewall SQL usa la regola "servizi Azure",
+        in produzione vera sarebbe un private endpoint.
+      </p>
 
       <h3>Avvio — opzione A: un solo comando (Docker)</h3>
       <pre><code>cd blueharbor_sprint2
