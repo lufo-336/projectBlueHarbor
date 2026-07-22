@@ -24,6 +24,10 @@
 .timeline-legend li { display: inline-flex; align-items: center; gap: 0.4rem; }
 .lg { width: 20px; height: 12px; border-radius: var(--radius-sm); flex: none; }
 .lg--occupied { background: var(--occupation); }
+.lg--maintenance {
+  background: repeating-linear-gradient(135deg,
+    var(--maintenance) 0 4px, var(--maintenance-alt) 4px 8px);
+}
 .lg--preview { background: transparent; border: 2px dashed var(--sahara); }
 .lg--today { background: var(--sahara-pale); border: 1px solid var(--sahara-border); }
 
@@ -37,6 +41,10 @@
 .berth-status__dot { width: 9px; height: 9px; border-radius: 50%; box-sizing: border-box; flex: none; }
 .berth-status.is-occupied .berth-status__dot { background: var(--amber); border: 1px solid var(--amber); }
 .berth-status.is-free .berth-status__dot { background: transparent; border: 2px solid var(--green); }
+/* Terzo stato: il QUADRATO distingue la manutenzione da disco/anello senza usare il colore. */
+.berth-status.is-maintenance .berth-status__dot {
+  background: var(--maintenance); border: 1px solid var(--maintenance); border-radius: 1px;
+}
 
 /* --- Storico assegnazioni: fascia a piena larghezza sotto le due colonne --- */
 .scheduler__history { grid-column: 1 / -1; }
@@ -123,4 +131,11 @@
 .timeline__block--preview {
   background: transparent; color: var(--text);
   border: 2px dashed var(--sahara); font-family: var(--font-mono);
+}
+/* Tratteggio a 45°: si distingue dall'occupazione (tinta piena) e dall'anteprima
+   (bordo tratteggiato oro) anche in bianco e nero. L'etichetta dice comunque cos'è. */
+.timeline__block--maintenance {
+  background: repeating-linear-gradient(135deg,
+    var(--maintenance) 0 5px, var(--maintenance-alt) 5px 10px);
+  color: #fff;
 }

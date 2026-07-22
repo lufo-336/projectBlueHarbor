@@ -40,6 +40,7 @@ Ogni proposta rispetta questi paletti — o dichiara apertamente dove li sfiora.
 | 11 | **Ruolo Admin (di piattaforma)**          | Medio-Alto      | ⚠️    | M      | —         |
 | 12 | Annulla nave **solo se Pending**          | Basso           | ⚠️    | S      | —         |
 | 13 | Export CSV dello storico                  | Basso           | ✅    | S      | dopo #1   |
+| 14 | **Banchine in manutenzione (Admin)**      | Medio           | ⚠️    | M      | —         |
 
 > **Stato di attuazione**
 > - ✅ **#1, #3, #4, #5, #6, #8, #11, #12, #13** — implementate e mergiate con la **PR #2** (17/07).
@@ -47,6 +48,7 @@ Ogni proposta rispetta questi paletti — o dichiara apertamente dove li sfiora.
 > - ✅ **#7** reset simulazione (endpoint Admin + pulsante UI, non più script) e
 >   ✅ **#10** data reale accanto al giorno virtuale — chiuse col branch **rifiniture** (22/07),
 >   insieme all'hashing PBKDF2 e alla timeline navigabile (fuori lista: emerse il 17/07).
+> - ✅ **#14** banchine in manutenzione — implementata il 22/07 (design del 17/07).
 > - ⏳ **#9** accessibilità — resta l'unica aperta (Sprint 10).
 
 ## Tier 1 — nel cuore del progetto (consigliati)
@@ -134,6 +136,12 @@ documentata. Tier 2, sforzo medio.
   da dichiarare come assunzione esplicita.
 - **13. Export CSV dello storico** — sola lettura, innocuo; ma solo **dopo** aver realizzato
   l'audit trail (#1).
+- **14. Banchine in manutenzione** — l'Admin dichiara finestre `[inizio, fine)` in cui una banchina
+  non è utilizzabile; le navi assegnate **dopo** si accodano oltre, usando l'algoritmo esistente.
+  **Paletti rispettati:** nessuna nave già assegnata viene mai spostata (conflitto → `409`); il
+  **set** di banchine non cambia (restano 8: 1 XL · 1 L · 2 M · 4 S), cambia la **disponibilità**;
+  nessuna pianificazione automatica (i giorni li sceglie l'Admin), nessun KPI, nessun real-time.
+  Da dichiarare come assunzione, come per #11 e #12.
 
 ## Da evitare — snaturano il progetto
 

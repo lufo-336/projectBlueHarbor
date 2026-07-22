@@ -37,6 +37,9 @@
   /* Blocco occupazione della timeline: deve staccare da --surface, che nel
      tema scuro è a sua volta un blu cobalto. */
   --occupation: var(--cobalt-light);
+  /* Manutenzione: deve staccare sia da --surface sia dai blocchi occupazione. */
+  --maintenance:     #4A5578;
+  --maintenance-alt: #39425F;
 
   /* Forme e ombre */
   --radius-sm: 4px; --radius-md: 8px; --radius-lg: 14px;
@@ -57,6 +60,8 @@
     --text-muted: var(--grey-400);
     --border:     #24385C;
     --occupation: #3A6BC0; /* 3.2:1 su --surface, 5.1:1 col testo bianco */
+    --maintenance:     #7E8CB4;
+    --maintenance-alt: #63709A;
     --shadow-sm:  0 1px 4px rgba(0, 0, 0, 0.40);
     --shadow-md:  0 4px 20px rgba(0, 0, 0, 0.50);
   }

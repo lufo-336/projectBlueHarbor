@@ -144,6 +144,7 @@ export default function SchedulerView() {
           </div>
           <ul className="timeline-legend">
             <li><span className="lg lg--occupied" aria-hidden="true" />Occupazione</li>
+            <li><span className="lg lg--maintenance" aria-hidden="true" />Manutenzione</li>
             <li><span className="lg lg--preview" aria-hidden="true" />Anteprima accodamento</li>
             <li><span className="lg lg--today" aria-hidden="true" />Oggi</li>
           </ul>
@@ -166,10 +167,14 @@ export default function SchedulerView() {
               const compatible = selectedShip !== null && isCompatible(selectedShip.size, berth.size);
               const dimmed = selectedShip !== null && !compatible;
               // Anteprima di accodamento: primo giorno libero per la nave selezionata.
+              // Le manutenzioni bloccano come le occupazioni: stessa lista, come fa il server.
               const previewStart = compatible
                 ? computeOccupationStartDay(
                     selectedShip.arrivalDay, selectedShip.duration, dashboard.currentDay,
-                    berth.assignments.map((a) => ({ start: a.startDay, end: a.endDay })))
+                    [
+                      ...berth.assignments.map((a) => ({ start: a.startDay, end: a.endDay })),
+                      ...berth.maintenances.map((m) => ({ start: m.startDay, end: m.endDay })),
+                    ])
                 : null;
 
               return (
@@ -178,10 +183,20 @@ export default function SchedulerView() {
                   <div className="timeline__label">
                     <span className="timeline__berth">{berth.name}</span>
                     <span className="badge badge-size">{berth.size}</span>
-                    <span className={`berth-status ${berth.isOccupiedNow ? 'is-occupied' : 'is-free'}`}>
-                      <span className="berth-status__dot" aria-hidden="true" />
-                      {berth.isOccupiedNow ? 'Occupata' : 'Libera'}
-                    </span>
+                    {(() => {
+                      // Tre stati, distinti dalla FORMA del pallino prima che dal colore:
+                      // disco = occupata, anello = libera, quadrato = in manutenzione.
+                      const state = berth.isUnderMaintenanceNow ? 'maintenance'
+                                  : berth.isOccupiedNow ? 'occupied' : 'free';
+                      const label = state === 'maintenance' ? 'In manutenzione'
+                                  : state === 'occupied' ? 'Occupata' : 'Libera';
+                      return (
+                        <span className={`berth-status is-${state}`}>
+                          <span className="berth-status__dot" aria-hidden="true" />
+                          {label}
+                        </span>
+                      );
+                    })()}
                     {compatible && (
                       <button className="btn btn-gold timeline__assign" disabled={assigning}
                               onClick={() => handleAssign(berth, selectedShip)}>
@@ -208,6 +223,22 @@ export default function SchedulerView() {
                            title={`${a.shipName}: giorni ${a.startDay}–${a.endDay - 1}`}
                            aria-label={`${berth.name} occupata da ${a.shipName}, giorni ${a.startDay}–${a.endDay - 1}`}>
                         {a.shipName}
+                      </div>
+                    );
+                  })}
+
+                  {/* Manutenzioni: stessa semantica [start,end) delle occupazioni, ma
+                      tratteggio + etichetta esplicita, così si distinguono anche senza colore. */}
+                  {berth.maintenances.map((m) => {
+                    const start = Math.max(m.startDay, windowStart);
+                    const end = Math.min(m.endDay, windowStart + TIMELINE_DAYS);
+                    if (end <= start) return null; // fuori dalla finestra visibile
+                    return (
+                      <div key={`m${m.id}`} className="timeline__block timeline__block--maintenance"
+                           style={{ gridColumn: `${start - windowStart + 2} / ${end - windowStart + 2}` }}
+                           title={`Manutenzione: giorni ${m.startDay}–${m.endDay - 1}`}
+                           aria-label={`${berth.name} in manutenzione, giorni ${m.startDay}–${m.endDay - 1}`}>
+                        Manutenzione
                       </div>
                     );
                   })}

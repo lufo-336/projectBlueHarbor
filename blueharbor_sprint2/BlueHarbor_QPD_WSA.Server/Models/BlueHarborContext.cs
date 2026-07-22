@@ -26,6 +26,8 @@ public class BlueHarborContext : DbContext
 
     public DbSet<AssignmentHistory> AssignmentHistory => Set<AssignmentHistory>();
 
+    public DbSet<BerthMaintenance> BerthMaintenance => Set<BerthMaintenance>();
+
     // ==========================================================================
     //  Configurazione del modello (vincoli, lunghezze, relazioni)
     // ==========================================================================
@@ -108,6 +110,23 @@ public class BlueHarborContext : DbContext
                 .HasMaxLength(10)
                 .IsUnicode(false);
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+        });
+
+        // ---------- BerthMaintenance: finestre [StartDay, EndDay) di indisponibilità ----------
+        modelBuilder.Entity<BerthMaintenance>(entity =>
+        {
+            entity.ToTable("BerthMaintenance", t =>
+                t.HasCheckConstraint("CK_BerthMaintenance_Days", "[EndDay] > [StartDay]"));
+
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.BerthId, e.StartDay })
+                .HasDatabaseName("IX_BerthMaintenance_Berth_Start");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+
+            entity.HasOne(e => e.Berth)
+                .WithMany(b => b.Maintenances)
+                .HasForeignKey(e => e.BerthId)
+                .HasConstraintName("FK_BerthMaintenance_Berths");
         });
     }
 }

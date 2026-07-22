@@ -13,4 +13,6 @@ public class Berth
     public string Size { get; set; } = null!;
 
     public ICollection<Ship> Ships { get; set; } = new List<Ship>();
+
+    public ICollection<BerthMaintenance> Maintenances { get; set; } = new List<BerthMaintenance>();
 }
