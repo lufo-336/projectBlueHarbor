@@ -151,4 +151,5 @@ export const api = {
   adminUpdateUser: (id, changes) =>
     request(`/api/admin/users/${id}`, { method: 'PUT', body: changes }),
   adminDeactivateUser: (id) => request(`/api/admin/users/${id}`, { method: 'DELETE' }),
+  adminResetSimulation: () => request('/api/admin/simulation/reset', { method: 'POST' }),
 };

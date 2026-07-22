@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '../services/api.js';
 import { ROLES, ROLE_LABELS } from '../services/roles.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useDay } from '../context/DayContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import OperatorView from './OperatorView.jsx';
@@ -20,7 +21,7 @@ export default function AdminView() {
         <button className={tab === 'operator' ? 'is-active' : ''} onClick={() => setTab('operator')}>Vista Operatore</button>
         <button className={tab === 'scheduler' ? 'is-active' : ''} onClick={() => setTab('scheduler')}>Vista Scheduler</button>
       </nav>
-      {tab === 'users' && <UserManagement />}
+      {tab === 'users' && (<><UserManagement /><SimulationTools /></>)}
       {tab === 'operator' && <OperatorView />}
       {tab === 'scheduler' && <SchedulerView />}
     </div>
@@ -186,5 +187,37 @@ function UserManagement() {
         </div>
       </section>
     </>
+  );
+}
+
+function SimulationTools() {
+  const { setCurrentDay } = useDay();
+  const { showSuccess, showError } = useToast();
+  const [busy, setBusy] = useState(false);
+
+  async function handleReset() {
+    const ok = window.confirm(
+      'Reset della simulazione: cancella TUTTE le navi e lo storico, e riporta il giorno virtuale a 1. Continuare?');
+    if (!ok) return;
+    setBusy(true);
+    try {
+      const { removedShips, removedHistory } = await api.adminResetSimulation();
+      setCurrentDay(1);
+      showSuccess(`Simulazione azzerata: rimosse ${removedShips} navi e ${removedHistory} voci di storico.`);
+    } catch (err) {
+      showError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="card">
+      <h2>Simulazione</h2>
+      <p>Riporta l'ambiente allo stato iniziale (giorno 1, nessuna nave). Le banchine e gli utenti non vengono toccati.</p>
+      <button className="btn btn-danger" disabled={busy} onClick={handleReset}>
+        Reset simulazione
+      </button>
+    </section>
   );
 }
