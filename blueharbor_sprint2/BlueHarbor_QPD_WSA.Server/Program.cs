@@ -32,7 +32,12 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 // Telemetria: attiva solo dove APPLICATIONINSIGHTS_CONNECTION_STRING è presente
 // (in locale resta spenta: nessun rumore, nessuna dipendenza).
-builder.Services.AddApplicationInsightsTelemetry();
+// NB: dall'SDK 3.x la registrazione senza connection string fa crashare l'host
+// all'avvio, quindi il check deve stare qui e non dentro l'SDK.
+if (!string.IsNullOrEmpty(builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]))
+{
+    builder.Services.AddApplicationInsightsTelemetry();
+}
 
 // --- Servizi di dominio ---
 builder.Services.AddScoped<ShipGeneratorService>();
