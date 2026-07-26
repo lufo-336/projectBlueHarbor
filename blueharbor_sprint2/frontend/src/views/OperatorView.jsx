@@ -30,6 +30,15 @@ export default function OperatorView() {
   const [page, setPage] = useState(1);
   const searchTimer = useRef(null);
   const highlightTimer = useRef(null);
+  const notesRef = useRef(null);
+
+  // Textarea che cresce da sola col contenuto (fino a un massimo, poi scorre):
+  // niente maniglia di resize, si comporta come un normale blocco di testo.
+  function resizeNotes(el) {
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 200)}px`;
+  }
 
   const loadShips = useCallback(async () => {
     try {
@@ -76,6 +85,7 @@ export default function OperatorView() {
       showSuccess(`${ship.name} registrata — taglia ${ship.size}, arrivo ${fmtDay(ship.arrivalDay)}, durata ${formatDuration(ship.duration)}.`);
       setName('');
       setNotes('');
+      requestAnimationFrame(() => resizeNotes(notesRef.current)); // ripristina l'altezza
       // Evidenzia la nave appena creata (se ricade nella pagina visibile).
       setHighlightId(ship.id);
       clearTimeout(highlightTimer.current);
@@ -146,8 +156,9 @@ export default function OperatorView() {
           </div>
           <div className="field operator__field-notes">
             <label htmlFor="ship-notes">Note <span className="field__optional">(facoltative)</span></label>
-            <textarea id="ship-notes" value={notes} onChange={(e) => setNotes(e.target.value)}
-                      placeholder="Es. carico refrigerato, priorità alta…" rows={3} maxLength={255} />
+            <textarea id="ship-notes" ref={notesRef} value={notes}
+                      onChange={(e) => { setNotes(e.target.value); resizeNotes(e.target); }}
+                      placeholder="Es. carico refrigerato, priorità alta…" rows={2} maxLength={2000} />
           </div>
           <button type="submit" className="btn btn-primary operator__submit" disabled={submitting}>
             {submitting ? 'Registro…' : 'Registra'}

@@ -63,7 +63,7 @@ public class BlueHarborContext : DbContext
                 .HasConversion<string>()
                 .HasMaxLength(10)
                 .IsUnicode(false);
-            entity.Property(e => e.Notes).HasMaxLength(255).IsUnicode(false);
+            entity.Property(e => e.Notes).HasMaxLength(2000).IsUnicode(false);
 
             entity.HasOne(e => e.Berth)
                 .WithMany(b => b.Ships)

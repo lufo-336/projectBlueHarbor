@@ -102,10 +102,24 @@ export default function SchedulerView() {
     return () => el.removeEventListener('wheel', onWheel);
   }, [ready]);
 
-  // Porta la finestra sulla finestra d'arrivo di una nave (un giorno di contesto prima).
+  // Porta la finestra sul giorno in cui la nave verrebbe REALMENTE collocata:
+  // il primo slot libero sulla banchina compatibile più disponibile (tiene conto
+  // delle code/accavallamenti), non il semplice giorno d'arrivo. Un giorno di
+  // contesto prima.
   function offsetForArrival(d, ship) {
-    const target = Math.max(d.currentDay, ship.arrivalDay - 1);
-    return Math.min(Math.max(0, target - d.currentDay), maxHorizonOffset(d));
+    let placement = Math.max(d.currentDay, ship.arrivalDay);
+    let earliest = Infinity;
+    for (const b of d.berths) {
+      if (!isCompatible(ship.size, b.size)) continue;
+      const occ = [
+        ...b.assignments.map((a) => ({ start: a.startDay, end: a.endDay })),
+        ...b.maintenances.map((m) => ({ start: m.startDay, end: m.endDay })),
+      ];
+      earliest = Math.min(earliest, computeOccupationStartDay(ship.arrivalDay, ship.duration, d.currentDay, occ));
+    }
+    if (Number.isFinite(earliest)) placement = earliest;
+    const start = Math.max(d.currentDay, placement - 1);
+    return Math.min(Math.max(0, start - d.currentDay), maxHorizonOffset(d));
   }
 
   function selectShip(ship) {

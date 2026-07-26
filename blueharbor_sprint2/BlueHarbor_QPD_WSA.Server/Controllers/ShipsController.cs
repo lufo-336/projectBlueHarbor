@@ -111,7 +111,7 @@ public class ShipsController : ControllerBase
         var totalPages = total == 0 ? 0 : (int)Math.Ceiling(total / (double)pageSize);
 
         var items = await query
-            .OrderBy(s => s.Id)
+            .OrderByDescending(s => s.Id) // più recenti in cima (registrazione = Id crescente)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .Select(s => new ShipDto(
@@ -141,10 +141,10 @@ public class ShipsController : ControllerBase
 
         // La nota è facoltativa (es. carico, priorità): stringa vuota -> NULL.
         var notes = string.IsNullOrWhiteSpace(request.Notes) ? null : request.Notes.Trim();
-        if (notes is { Length: > 255 })
+        if (notes is { Length: > 2000 })
         {
             return Problem(
-                detail: "La nota non può superare i 255 caratteri.",
+                detail: "La nota non può superare i 2000 caratteri.",
                 statusCode: StatusCodes.Status400BadRequest);
         }
 

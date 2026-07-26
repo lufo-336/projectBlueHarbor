@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
+import { usePrefs } from '../context/PrefsContext.jsx';
 import './AuthPage.css';
 
 // Account del seed backend: comodi da compilare al volo durante le demo.
@@ -11,6 +12,7 @@ const DEMO_ACCOUNTS = [
 
 export default function AuthPage() {
   const { login } = useAuth();
+  const { theme, toggleTheme } = usePrefs();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
@@ -30,6 +32,11 @@ export default function AuthPage() {
 
   return (
     <div className="auth-page">
+      <button type="button" className="auth-theme-toggle" onClick={toggleTheme}
+              title={theme === 'dark' ? 'Passa al tema chiaro' : 'Passa al tema scuro'}
+              aria-label={theme === 'dark' ? 'Passa al tema chiaro' : 'Passa al tema scuro'}>
+        {theme === 'dark' ? '☀' : '☾'}
+      </button>
       {/* Colonna scura: brand + numeri del terminal (estetica "manifesto di carico") */}
       <section className="auth-hero">
         <div className="auth-hero__brand mono">⚓ BLUEHARBOR TERMINAL</div>
