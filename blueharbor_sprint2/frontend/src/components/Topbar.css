@@ -14,14 +14,28 @@
   color: var(--sahara-light);
 }
 
-/* --- Riepilogo terminal (centro navbar) --- */
-.topbar__summary {
-  display: inline-flex; align-items: center; gap: 0.4rem 1rem; flex-wrap: wrap;
-  color: var(--grey-400); font-size: var(--fs-sm);
+/* --- Mini-mappa banchine (centro navbar): il terminal a colpo d'occhio --- */
+.topbar__berthmap { display: inline-flex; align-items: center; gap: 0.65rem; }
+.topbar__berthmap-label { color: var(--grey-400); font-size: var(--fs-sm); white-space: nowrap; }
+.topbar__berthmap-label b { color: var(--sahara-light); font-weight: 700; }
+.bmap { display: inline-flex; align-items: center; gap: 3px; }
+.bmap-cell {
+  width: 27px; height: 22px; border-radius: 5px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 0.62rem; font-weight: 700; font-family: var(--font-mono);
+  border: 1px solid rgba(255, 255, 255, 0.16); color: var(--grey-400);
+  background: rgba(255, 255, 255, 0.05);
+  transition: transform 120ms ease;
 }
-.topbar__stat { display: inline-flex; align-items: baseline; gap: 0.35rem; white-space: nowrap; }
-.topbar__stat b { color: var(--grey-100); font-weight: 700; font-size: var(--fs-md); }
-.topbar__stat--berths b { color: var(--sahara-light); }
+.bmap-cell:hover { transform: translateY(-1px); }
+.bmap-cell--gap { margin-left: 8px; }
+/* Occupata = blu pieno (come l'occupazione in timeline); manutenzione = tratteggio;
+   libera = cella tenue con solo il bordo. */
+.bmap-cell--occupied { background: #3E7BD0; border-color: #3E7BD0; color: #fff; }
+.bmap-cell--maintenance {
+  color: #fff; border-color: transparent;
+  background: repeating-linear-gradient(135deg, #5B6A90 0 4px, #46537B 4px 8px);
+}
 
 /* --- Gruppo destro: giorno, strumenti, identità --- */
 .topbar__right { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }

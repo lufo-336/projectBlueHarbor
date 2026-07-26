@@ -70,13 +70,24 @@ export default function Topbar() {
         </span>
       </div>
 
-      {summary && (
-        <div className="topbar__summary" aria-label="Riepilogo del terminal">
-          <span className="topbar__stat"><b className="mono">{summary.pending}</b> in attesa</span>
-          <span className="topbar__stat"><b className="mono">{summary.assigned}</b> assegnate</span>
-          <span className="topbar__stat"><b className="mono">{summary.departed}</b> partite</span>
-          <span className="topbar__stat topbar__stat--berths">
-            <b className="mono">{summary.berthsOccupied}/{summary.berthsTotal}</b> banchine occupate
+      {summary?.berths && (
+        <div className="topbar__berthmap" aria-label="Stato delle banchine">
+          <span className="topbar__berthmap-label">
+            Banchine <b className="mono">{summary.berthsOccupied}/{summary.berthsTotal}</b>
+          </span>
+          <span className="bmap">
+            {summary.berths.map((b, i) => {
+              const groupStart = i > 0 && b.size !== summary.berths[i - 1].size;
+              const label = b.state === 'maintenance' ? 'in manutenzione'
+                          : b.state === 'occupied' ? 'occupata' : 'libera';
+              return (
+                <span key={b.id}
+                      className={`bmap-cell bmap-cell--${b.state}${groupStart ? ' bmap-cell--gap' : ''}`}
+                      title={`${b.name} · ${label}`}>
+                  {b.size}
+                </span>
+              );
+            })}
           </span>
         </div>
       )}
