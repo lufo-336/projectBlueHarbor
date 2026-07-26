@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { useDay } from '../context/DayContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
+import ShipArchive from '../components/ShipArchive.jsx';
 import OperatorView from './OperatorView.jsx';
 import SchedulerView from './SchedulerView.jsx';
 import './AdminView.css';
@@ -19,11 +20,13 @@ export default function AdminView() {
       <nav className="admin__tabs" aria-label="Sezioni Admin">
         <button className={tab === 'users' ? 'is-active' : ''} onClick={() => setTab('users')}>Gestione utenti</button>
         <button className={tab === 'maintenance' ? 'is-active' : ''} onClick={() => setTab('maintenance')}>Manutenzioni</button>
+        <button className={tab === 'archive' ? 'is-active' : ''} onClick={() => setTab('archive')}>Archivio navi</button>
         <button className={tab === 'operator' ? 'is-active' : ''} onClick={() => setTab('operator')}>Vista Operatore</button>
         <button className={tab === 'scheduler' ? 'is-active' : ''} onClick={() => setTab('scheduler')}>Vista Scheduler</button>
       </nav>
       {tab === 'users' && (<><UserManagement /><SimulationTools /></>)}
       {tab === 'maintenance' && <MaintenanceManagement />}
+      {tab === 'archive' && <ShipArchive />}
       {tab === 'operator' && <OperatorView />}
       {tab === 'scheduler' && <SchedulerView />}
     </div>

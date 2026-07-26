@@ -1,0 +1,27 @@
+.ship-archive__head {
+  display: flex; justify-content: space-between; align-items: start;
+  gap: 1rem; flex-wrap: wrap; margin-bottom: 0.5rem;
+}
+.ship-archive__head h2 { margin-bottom: 0.2rem; }
+.ship-archive__hint { color: var(--text-muted); font-size: 0.9rem; margin: 0; }
+
+.ship-archive__wrap { overflow-x: auto; }
+.ship-archive__table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+.ship-archive__table th, .ship-archive__table td {
+  text-align: left; padding: 0.55rem 0.75rem; border-bottom: 1px solid var(--border);
+}
+.ship-archive__table th {
+  color: var(--text-muted); font-size: 0.8rem;
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+.ship-archive__name { font-weight: 700; color: var(--text); }
+.ship-archive__notes {
+  max-width: 220px; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; color: var(--text-muted);
+}
+
+.ship-archive__pager {
+  display: flex; align-items: center; justify-content: center;
+  gap: 1rem; margin-top: 0.9rem; flex-wrap: wrap;
+}
+.ship-archive__pager-info { color: var(--text-muted); font-size: 0.9rem; }

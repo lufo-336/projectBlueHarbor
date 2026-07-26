@@ -44,9 +44,12 @@ export default function SchedulerView() {
 
   // Ref-specchio di dashboard e offset: servono al gestore rotella (nativo,
   // non-passivo) per leggere lo stato aggiornato senza closure stantie.
-  const dashboardRef = useRef(dashboard); dashboardRef.current = dashboard;
-  const offsetRef = useRef(horizonOffset); offsetRef.current = horizonOffset;
+  // Aggiornati in effect (non durante il render).
+  const dashboardRef = useRef(dashboard);
+  const offsetRef = useRef(horizonOffset);
   const timelineRef = useRef(null);
+  useEffect(() => { dashboardRef.current = dashboard; }, [dashboard]);
+  useEffect(() => { offsetRef.current = horizonOffset; }, [horizonOffset]);
 
   const loadDashboard = useCallback(async () => {
     try {
