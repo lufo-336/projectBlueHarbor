@@ -1,18 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useDay } from '../context/DayContext.jsx';
-import { usePrefs } from '../context/PrefsContext.jsx';
+import { usePrefs, useT, useDayLabel } from '../context/PrefsContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import { api } from '../services/api.js';
-import { dayToDate } from '../services/time.js';
-import { roleLabel } from '../services/roles.js';
 import { requestBerthFocus } from '../services/nav.js';
 import './Topbar.css';
 
 export default function Topbar() {
   const { user, logout } = useAuth();
-  const { currentDay, setCurrentDay, day1Date } = useDay();
-  const { theme, timeMode, toggleTheme, toggleTimeMode } = usePrefs();
+  const { currentDay, setCurrentDay } = useDay();
+  const { theme, timeMode, lang, toggleTheme, toggleTimeMode, setLang } = usePrefs();
+  const t = useT();
+  const fmtDay = useDayLabel();
   const { showSuccess, showError } = useToast();
   const [advancing, setAdvancing] = useState(false);
   const [summary, setSummary] = useState(null);
@@ -33,7 +33,7 @@ export default function Topbar() {
     try {
       const { currentDay: day } = await api.nextDay();
       setCurrentDay(day);
-      showSuccess(`Siamo al giorno ${day}.`);
+      showSuccess(t('topbar.nowDay', { n: day }));
     } catch (err) {
       showError(err.message);
     } finally {
@@ -41,11 +41,10 @@ export default function Topbar() {
     }
   }
 
-  // Data calendario derivata dal giorno virtuale (solo proiezione, mai logica).
-  const date = currentDay !== null ? dayToDate(currentDay, day1Date) : null;
-  const dateStr = date && date.toLocaleDateString('it-IT', { day: 'numeric', month: 'long' });
-  const dayStr = currentDay === null ? '—' : String(currentDay);
-  const role = roleLabel(user.role);
+  // In modalità "Data" mostra la data calendario estesa; in "Giorno" la parola
+  // "Giorno N" (fmtDay in modalità date proietta o ripiega su gN/dN da solo).
+  const dateStr = fmtDay(currentDay, { mode: 'date' });
+  const role = t(`roles.${user.role}`);
   const initial = role.charAt(0).toUpperCase();
   // Solo Scheduler e Admin possono aprire lo Scheduler; l'Operatore non vi ha
   // accesso, quindi per lui le celle restano informative (non cliccabili).
@@ -75,19 +74,20 @@ export default function Topbar() {
       </div>
 
       {summary?.berths && (
-        <div className="topbar__berthmap" aria-label="Stato delle banchine">
+        <div className="topbar__berthmap" aria-label={t('topbar.berthsAria')}>
           <span className="topbar__berthmap-label">
-            Banchine <b className="mono">{summary.berthsOccupied}/{summary.berthsTotal}</b>
+            {t('topbar.berths')} <b className="mono">{summary.berthsOccupied}/{summary.berthsTotal}</b>
           </span>
           <span className="bmap">
             {summary.berths.map((b, i) => {
               const groupStart = i > 0 && b.size !== summary.berths[i - 1].size;
-              const label = b.state === 'maintenance' ? 'in manutenzione'
-                          : b.state === 'occupied' ? 'occupata' : 'libera';
+              const stateKey = b.state === 'maintenance' ? 'maintenance'
+                             : b.state === 'occupied' ? 'occupied' : 'free';
+              const label = t(`topbar.berthState.${stateKey}`);
               const cls = `bmap-cell bmap-cell--${b.state}${groupStart ? ' bmap-cell--gap' : ''}`;
               return canOpenScheduler ? (
                 <button key={b.id} type="button" className={`${cls} bmap-cell--btn`}
-                        title={`${b.name} · ${label} · apri nello Scheduler`}
+                        title={`${b.name} · ${label} · ${t('topbar.openInScheduler')}`}
                         onClick={() => requestBerthFocus(b.id)}>
                   {b.size}
                 </button>
@@ -105,26 +105,36 @@ export default function Topbar() {
         {/* Giorno virtuale + Next Day: un'unica unità coesa. */}
         <div className="topbar__daybox">
           <span className="topbar__day mono">
-            {timeMode === 'date' ? (dateStr ?? '—') : `Giorno ${dayStr}`}
+            {timeMode === 'date'
+              ? dateStr
+              : (currentDay === null ? t('common.dash') : t('topbar.dayN', { n: currentDay }))}
           </span>
           <button className="btn btn-gold topbar__next" onClick={handleNextDay} disabled={advancing}>
-            {advancing ? 'Avanzo…' : 'Next Day →'}
+            {advancing ? t('topbar.advancing') : t('topbar.nextDay')}
           </button>
         </div>
 
-        {/* Gruppo strumenti: formato tempo + tema. */}
+        {/* Gruppo strumenti: formato tempo + lingua + tema. */}
         <div className="topbar__tools">
-          <div className="seg" role="group" aria-label="Formato del tempo">
+          <div className="seg" role="group" aria-label={t('topbar.timeFormatAria')}>
             <button type="button" className={timeMode === 'day' ? 'is-active' : ''}
                     aria-pressed={timeMode === 'day'}
-                    onClick={() => timeMode !== 'day' && toggleTimeMode()}>Giorno</button>
+                    onClick={() => timeMode !== 'day' && toggleTimeMode()}>{t('topbar.day')}</button>
             <button type="button" className={timeMode === 'date' ? 'is-active' : ''}
                     aria-pressed={timeMode === 'date'}
-                    onClick={() => timeMode !== 'date' && toggleTimeMode()}>Data</button>
+                    onClick={() => timeMode !== 'date' && toggleTimeMode()}>{t('topbar.date')}</button>
+          </div>
+          <div className="seg" role="group" aria-label={t('topbar.languageAria')}>
+            <button type="button" className={lang === 'it' ? 'is-active' : ''}
+                    aria-pressed={lang === 'it'}
+                    onClick={() => lang !== 'it' && setLang('it')}>IT</button>
+            <button type="button" className={lang === 'en' ? 'is-active' : ''}
+                    aria-pressed={lang === 'en'}
+                    onClick={() => lang !== 'en' && setLang('en')}>EN</button>
           </div>
           <button type="button" className="topbar__icon-btn" onClick={toggleTheme}
-                  title={theme === 'dark' ? 'Passa al tema chiaro' : 'Passa al tema scuro'}
-                  aria-label={theme === 'dark' ? 'Passa al tema chiaro' : 'Passa al tema scuro'}>
+                  title={theme === 'dark' ? t('common.themeToLight') : t('common.themeToDark')}
+                  aria-label={theme === 'dark' ? t('common.themeToLight') : t('common.themeToDark')}>
             {theme === 'dark' ? '☀' : '☾'}
           </button>
         </div>
@@ -132,7 +142,7 @@ export default function Topbar() {
         <div className="topbar__identity" title={user.email}>
           <span className="topbar__avatar" aria-hidden="true">{initial}</span>
           <span className="topbar__role-single">{role}</span>
-          <button className="btn btn-ghost btn-sm topbar__logout" onClick={logout}>Esci</button>
+          <button className="btn btn-ghost btn-sm topbar__logout" onClick={logout}>{t('topbar.logout')}</button>
         </div>
       </div>
     </header>

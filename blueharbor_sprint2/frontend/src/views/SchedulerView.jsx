@@ -2,9 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../services/api.js';
 import { computeOccupationStartDay, isCompatible } from '../services/scheduling.js';
 import { useDay } from '../context/DayContext.jsx';
-import { useDayLabel } from '../context/PrefsContext.jsx';
+import { useDayLabel, useDurationLabel, useT } from '../context/PrefsContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
-import { formatDuration } from '../services/time.js';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import Modal from '../components/Modal.jsx';
 import './SchedulerView.css';
@@ -14,8 +13,6 @@ import './SchedulerView.css';
 // NB: deve combaciare con repeat(14, ...) in SchedulerView.css.
 const TIMELINE_DAYS = 14;
 const WHEEL_STEP = 2; // giorni spostati per "scatto" di rotella
-
-const EVENT_LABELS = { Assigned: 'Assegnata', Departed: 'Partita' };
 
 // Limite fino a cui ha senso muovere la finestra: copre 30 giorni, tutte le
 // occupazioni/manutenzioni note e gli arrivi in attesa.
@@ -33,6 +30,8 @@ function maxHorizonOffset(d) {
 export default function SchedulerView({ focusBerth = null }) {
   const { currentDay } = useDay();
   const fmtDay = useDayLabel();
+  const fmtDuration = useDurationLabel();
+  const t = useT();
   const { showSuccess, showError } = useToast();
   const [dashboard, setDashboard] = useState(null); // null = primo caricamento
   const [selectedShipId, setSelectedShipId] = useState(null);
@@ -77,8 +76,8 @@ export default function SchedulerView({ focusBerth = null }) {
   // Percorso Admin (arriva da un'altra tab): richiesta passata come prop.
   useEffect(() => {
     if (focusBerth?.berthId != null) {
-      const t = setTimeout(() => flashBerth(focusBerth.berthId), 0);
-      return () => clearTimeout(t);
+      const timer = setTimeout(() => flashBerth(focusBerth.berthId), 0);
+      return () => clearTimeout(timer);
     }
     return undefined;
   }, [focusBerth, flashBerth]);
@@ -180,7 +179,9 @@ export default function SchedulerView({ focusBerth = null }) {
     try {
       const result = await api.assignShip(selectedShip.id, berth.id);
       // Fa fede il giorno calcolato dal SERVER, non l'anteprima client.
-      showSuccess(`${result.name} assegnata a ${berth.name}: occupazione dal ${fmtDay(result.occupationStartDay)}.`);
+      showSuccess(t('scheduler.toastAssigned', {
+        name: result.name, berth: berth.name, day: fmtDay(result.occupationStartDay),
+      }));
       setSelectedShipId(null);
       await Promise.all([loadDashboard(), loadHistory()]);
     } catch (err) {
@@ -192,11 +193,11 @@ export default function SchedulerView({ focusBerth = null }) {
 
   // Annulla un'assegnazione finché l'occupazione non è iniziata (torna Pending).
   async function handleUnassign(a) {
-    if (!window.confirm(`Annullare l'assegnazione di "${a.shipName}"? La nave tornerà in attesa.`)) return;
+    if (!window.confirm(t('scheduler.confirmUnassign', { name: a.shipName }))) return;
     setUnassigningId(a.shipId);
     try {
       await api.unassignShip(a.shipId);
-      showSuccess(`Assegnazione di "${a.shipName}" annullata: la nave torna in attesa.`);
+      showSuccess(t('scheduler.toastUnassigned', { name: a.shipName }));
       setSelectedShipId(null);
       await Promise.all([loadDashboard(), loadHistory()]);
     } catch (err) {
@@ -220,7 +221,7 @@ export default function SchedulerView({ focusBerth = null }) {
     try {
       const r = await api.editAssignment(
         editingAssignment.shipId, Number(assignForm.berthId), name, assignForm.notes.trim() || null);
-      showSuccess(`Assegnazione di "${r.name}" aggiornata: occupazione dal ${fmtDay(r.occupationStartDay)}.`);
+      showSuccess(t('scheduler.toastAssignmentUpdated', { name: r.name, day: fmtDay(r.occupationStartDay) }));
       setEditingAssignment(null);
       await Promise.all([loadDashboard(), loadHistory()]);
     } catch (err) {
@@ -254,7 +255,7 @@ export default function SchedulerView({ focusBerth = null }) {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = 'storico.csv';
+      link.download = t('scheduler.csvFilename');
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -291,9 +292,9 @@ export default function SchedulerView({ focusBerth = null }) {
     <div className="scheduler">
       {/* ---- Pannello sinistro: navi in attesa (flusso guidato, passo 1) ---- */}
       <aside className="card scheduler__pending">
-        <h2>Navi in attesa</h2>
+        <h2>{t('scheduler.pendingTitle')}</h2>
         {dashboard.pendingShips.length === 0 ? (
-          <p className="scheduler__hint scheduler__empty">Nessuna nave in attesa.<br />L'Operatore può registrarne di nuove.</p>
+          <p className="scheduler__hint scheduler__empty">{t('scheduler.pendingEmpty1')}<br />{t('scheduler.pendingEmpty2')}</p>
         ) : (
           <ul className="pending-list scheduler__pending-list">
             {dashboard.pendingShips.map((ship) => (
@@ -304,7 +305,9 @@ export default function SchedulerView({ focusBerth = null }) {
                 >
                   <span className="pending-ship__name">{ship.name}</span>
                   <span className="badge badge-size">{ship.size}</span>
-                  <span className="pending-ship__meta mono">arr. {fmtDay(ship.arrivalDay)} · {formatDuration(ship.duration)}</span>
+                  <span className="pending-ship__meta mono">
+                    {t('scheduler.pendingMeta', { arrival: fmtDay(ship.arrivalDay), duration: fmtDuration(ship.duration) })}
+                  </span>
                 </button>
               </li>
             ))}
@@ -312,28 +315,30 @@ export default function SchedulerView({ focusBerth = null }) {
         )}
         {selectedShip && (
           <p className="scheduler__hint scheduler__hint--active">
-            <strong>{selectedShip.name}</strong> selezionata: scegli una banchina evidenziata nella timeline.
+            <strong>{selectedShip.name}</strong>{t('scheduler.selectedHintTail')}
             <button type="button" className="btn btn-ghost btn-sm scheduler__goto"
                     onClick={() => setHorizonOffset(offsetForArrival(dashboard, selectedShip))}>
-              ↦ vai all'arrivo ({fmtDay(selectedShip.arrivalDay)})
+              {t('scheduler.gotoArrival', { day: fmtDay(selectedShip.arrivalDay) })}
             </button>
           </p>
         )}
 
         {upcomingAssignments.length > 0 && (
           <div className="scheduler__upcoming">
-            <h3>Assegnazioni programmate</h3>
-            <p className="scheduler__hint">Modificabili finché l'occupazione non è iniziata.</p>
+            <h3>{t('scheduler.upcomingTitle')}</h3>
+            <p className="scheduler__hint">{t('scheduler.upcomingHint')}</p>
             <ul className="pending-list scheduler__upcoming-list">
               {upcomingAssignments.map((a) => (
                 <li key={a.shipId} className="upcoming-item">
                   <button type="button" className="upcoming-item__info"
-                          onClick={() => jumpAndFlash(a.startDay, a.shipId)} title="Mostra nella timeline">
+                          onClick={() => jumpAndFlash(a.startDay, a.shipId)} title={t('scheduler.showInTimeline')}>
                     <span className="pending-ship__name">{a.shipName}</span>
-                    <span className="upcoming-item__meta mono">{a.berthName} · dal {fmtDay(a.startDay)}</span>
+                    <span className="upcoming-item__meta mono">
+                      {t('scheduler.upcomingMeta', { berth: a.berthName, day: fmtDay(a.startDay) })}
+                    </span>
                   </button>
                   <button type="button" className="btn btn-ghost btn-sm"
-                          onClick={() => openAssignmentEdit(a)}>Modifica</button>
+                          onClick={() => openAssignmentEdit(a)}>{t('common.edit')}</button>
                 </li>
               ))}
             </ul>
@@ -344,28 +349,28 @@ export default function SchedulerView({ focusBerth = null }) {
       {/* ---- Timeline: banchine per riga, giorni per colonna (passo 2) ---- */}
       <section className="card scheduler__timeline">
         <div className="scheduler__timeline-head">
-          <h2>Timeline banchine</h2>
+          <h2>{t('scheduler.timelineTitle')}</h2>
           <div className="timeline-nav">
             <button className="btn btn-sm" disabled={horizonOffset === 0}
                     onClick={() => setHorizonOffset((o) => Math.max(0, o - TIMELINE_DAYS))}
-                    aria-label="Finestra precedente">‹</button>
+                    aria-label={t('scheduler.prevWindow')}>‹</button>
             <input type="range" className="timeline-slider"
                    min={0} max={maxOffset} value={Math.min(horizonOffset, maxOffset)}
                    disabled={maxOffset === 0}
                    onChange={(e) => setHorizonOffset(Number(e.target.value))}
-                   aria-label="Sposta la finestra temporale" />
+                   aria-label={t('scheduler.sliderAria')} />
             <button className="btn btn-sm" disabled={horizonOffset >= maxOffset}
                     onClick={() => setHorizonOffset((o) => Math.min(maxOffset, o + TIMELINE_DAYS))}
-                    aria-label="Finestra successiva">›</button>
+                    aria-label={t('scheduler.nextWindow')}>›</button>
             <span className="mono timeline-nav__range">{fmtDay(windowStart)}–{fmtDay(windowStart + TIMELINE_DAYS - 1)}</span>
             <button className="btn btn-sm" disabled={horizonOffset === 0}
-                    onClick={() => setHorizonOffset(0)}>oggi</button>
+                    onClick={() => setHorizonOffset(0)}>{t('common.today')}</button>
           </div>
           <ul className="timeline-legend">
-            <li><span className="lg lg--occupied" aria-hidden="true" />Occupazione</li>
-            <li><span className="lg lg--maintenance" aria-hidden="true" />Manutenzione</li>
-            <li><span className="lg lg--preview" aria-hidden="true" />Anteprima accodamento</li>
-            <li><span className="lg lg--today" aria-hidden="true" />Oggi</li>
+            <li><span className="lg lg--occupied" aria-hidden="true" />{t('scheduler.legendOccupied')}</li>
+            <li><span className="lg lg--maintenance" aria-hidden="true" />{t('scheduler.legendMaintenance')}</li>
+            <li><span className="lg lg--preview" aria-hidden="true" />{t('scheduler.legendPreview')}</li>
+            <li><span className="lg lg--today" aria-hidden="true" />{t('scheduler.legendToday')}</li>
           </ul>
         </div>
         <div className="timeline-scroll" ref={timelineRef}>
@@ -377,7 +382,7 @@ export default function SchedulerView({ focusBerth = null }) {
                 <div key={day} className={`timeline__head mono ${day === dashboard.currentDay ? 'is-today' : ''}`}
                      style={{ gridColumn: i + 2 }}>
                   {fmtDay(day, { compact: true })}
-                  {day === dashboard.currentDay && <span className="timeline__today-tag">oggi</span>}
+                  {day === dashboard.currentDay && <span className="timeline__today-tag">{t('common.today')}</span>}
                 </div>
               ))}
             </div>
@@ -410,8 +415,8 @@ export default function SchedulerView({ focusBerth = null }) {
                         // disco = occupata, anello = libera, quadrato = in manutenzione.
                         const state = berth.isUnderMaintenanceNow ? 'maintenance'
                                     : berth.isOccupiedNow ? 'occupied' : 'free';
-                        const label = state === 'maintenance' ? 'In manutenzione'
-                                    : state === 'occupied' ? 'Occupata' : 'Libera';
+                        const label = state === 'maintenance' ? t('scheduler.berthMaintenance')
+                                    : state === 'occupied' ? t('scheduler.berthOccupied') : t('scheduler.berthFree');
                         return (
                           <span className={`berth-status is-${state}`}>
                             <span className="berth-status__dot" aria-hidden="true" />
@@ -422,7 +427,7 @@ export default function SchedulerView({ focusBerth = null }) {
                       {compatible && (
                         <button className="btn btn-gold btn-sm timeline__assign" disabled={assigning}
                                 onClick={() => handleAssign(berth, selectedShip)}>
-                          Assegna →
+                          {t('scheduler.assign')}
                         </button>
                       )}
                     </div>
@@ -440,18 +445,19 @@ export default function SchedulerView({ focusBerth = null }) {
                     const start = Math.max(a.startDay, windowStart);
                     const end = Math.min(a.endDay, windowStart + TIMELINE_DAYS);
                     if (end <= start) return null; // fuori dalla finestra visibile
+                    const range = `${fmtDay(a.startDay)}–${fmtDay(a.endDay - 1)}`;
                     return (
                       <div key={a.shipId}
                            className={`timeline__block ${a.shipId === flashShipId ? 'is-flash' : ''}`}
                            style={{ gridColumn: `${start - windowStart + 2} / ${end - windowStart + 2}` }}
-                           aria-label={`${berth.name} occupata da ${a.shipName}, ${fmtDay(a.startDay)}–${fmtDay(a.endDay - 1)}`}
+                           aria-label={t('scheduler.blockOccupiedAria', { berth: berth.name, ship: a.shipName, range })}
                            onMouseEnter={(e) => showTipFor(e, {
                              title: a.shipName,
                              rows: [
-                               ['Taglia', a.size],
-                               ['Banchina', berth.name],
-                               ['Occupazione', `${fmtDay(a.startDay)}–${fmtDay(a.endDay - 1)}`],
-                               ['Durata', formatDuration(a.endDay - a.startDay)],
+                               [t('common.size'), a.size],
+                               [t('common.berth'), berth.name],
+                               [t('common.occupation'), range],
+                               [t('common.duration'), fmtDuration(a.endDay - a.startDay)],
                              ],
                              notes: a.notes,
                            })}
@@ -467,12 +473,13 @@ export default function SchedulerView({ focusBerth = null }) {
                     const start = Math.max(m.startDay, windowStart);
                     const end = Math.min(m.endDay, windowStart + TIMELINE_DAYS);
                     if (end <= start) return null; // fuori dalla finestra visibile
+                    const range = `${fmtDay(m.startDay)}–${fmtDay(m.endDay - 1)}`;
                     return (
                       <div key={`m${m.id}`} className="timeline__block timeline__block--maintenance"
                            style={{ gridColumn: `${start - windowStart + 2} / ${end - windowStart + 2}` }}
-                           title={`Manutenzione: ${fmtDay(m.startDay)}–${fmtDay(m.endDay - 1)}`}
-                           aria-label={`${berth.name} in manutenzione, ${fmtDay(m.startDay)}–${fmtDay(m.endDay - 1)}`}>
-                        Manutenzione
+                           title={t('scheduler.maintenanceTitle', { range })}
+                           aria-label={t('scheduler.maintenanceAria', { berth: berth.name, range })}>
+                        {t('scheduler.maintenance')}
                       </div>
                     );
                   })}
@@ -486,8 +493,8 @@ export default function SchedulerView({ focusBerth = null }) {
                     return (
                       <div className="timeline__block timeline__block--preview"
                            style={{ gridColumn: `${start - windowStart + 2} / ${end - windowStart + 2}` }}
-                           title={`Anteprima: dal ${fmtDay(previewStart)} per ${formatDuration(selectedShip.duration)}`}>
-                        dal {fmtDay(previewStart)}
+                           title={t('scheduler.previewTitle', { day: fmtDay(previewStart), duration: fmtDuration(selectedShip.duration) })}>
+                        {t('scheduler.previewFrom', { day: fmtDay(previewStart) })}
                       </div>
                     );
                   })()}
@@ -501,37 +508,37 @@ export default function SchedulerView({ focusBerth = null }) {
       {/* ---- Storico assegnazioni (#1): sola lettura, append-only lato backend ---- */}
       <section className="card scheduler__history">
         <div className="scheduler__history-head">
-          <h2>Storico assegnazioni</h2>
+          <h2>{t('scheduler.historyTitle')}</h2>
           <div className="scheduler__history-tools">
             <label className="field field--inline">
-              <span>Evento</span>
+              <span>{t('common.event')}</span>
               <select value={eventFilter} onChange={(e) => setEventFilter(e.target.value)}>
-                <option value="">Tutti</option>
-                <option value="Assigned">Assegnazioni</option>
-                <option value="Departed">Partenze</option>
+                <option value="">{t('common.allMasc')}</option>
+                <option value="Assigned">{t('scheduler.eventAssignments')}</option>
+                <option value="Departed">{t('scheduler.eventDepartures')}</option>
               </select>
             </label>
             <button type="button" className="btn btn-ghost btn-sm"
                     disabled={exporting || !history || history.length === 0}
                     onClick={handleExport}>
-              {exporting ? 'Esporto…' : 'Esporta CSV'}
+              {exporting ? t('scheduler.exporting') : t('scheduler.exportCsv')}
             </button>
           </div>
         </div>
 
         {history === null ? (
-          <p className="scheduler__hint">Caricamento storico…</p>
+          <p className="scheduler__hint">{t('scheduler.loadingHistory')}</p>
         ) : history.length === 0 ? (
           <p className="scheduler__hint">
-            {eventFilter ? 'Nessun evento di questo tipo.' : 'Nessun evento registrato finora.'}
+            {eventFilter ? t('scheduler.historyEmptyType') : t('scheduler.historyEmptyNone')}
           </p>
         ) : (
           <div className="scheduler__history-wrap">
             <table className="scheduler__history-table">
               <thead>
                 <tr>
-                  <th>Evento</th><th>Nave</th><th>Taglia</th><th>Banchina</th>
-                  <th>Occupazione</th><th>Registrato il</th><th>Azioni</th>
+                  <th>{t('common.event')}</th><th>{t('common.ship')}</th><th>{t('common.size')}</th><th>{t('common.berth')}</th>
+                  <th>{t('common.occupation')}</th><th>{t('scheduler.recordedOn')}</th><th>{t('common.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -539,13 +546,13 @@ export default function SchedulerView({ focusBerth = null }) {
                   <tr key={h.id}>
                     <td>
                       <span className={`badge badge-${h.eventType.toLowerCase()}`}>
-                        {EVENT_LABELS[h.eventType]}
+                        {t(`status.${h.eventType}`)}
                       </span>
                     </td>
                     <td>
                       <button type="button" className="linklike"
                               onClick={() => jumpAndFlash(h.occupationStartDay, h.shipId)}
-                              title="Mostra nella timeline">{h.shipName}</button>
+                              title={t('scheduler.showInTimeline')}>{h.shipName}</button>
                     </td>
                     <td><span className="badge badge-size">{h.size}</span></td>
                     <td>{h.berthName}</td>
@@ -554,8 +561,8 @@ export default function SchedulerView({ focusBerth = null }) {
                     <td>
                       {editableByShip.has(h.shipId) ? (
                         <button type="button" className="btn btn-ghost btn-sm"
-                                onClick={() => openAssignmentEdit(editableByShip.get(h.shipId))}>Modifica</button>
-                      ) : <span className="scheduler__hint">—</span>}
+                                onClick={() => openAssignmentEdit(editableByShip.get(h.shipId))}>{t('common.edit')}</button>
+                      ) : <span className="scheduler__hint">{t('common.dash')}</span>}
                     </td>
                   </tr>
                 ))}
@@ -576,15 +583,15 @@ export default function SchedulerView({ focusBerth = null }) {
       )}
 
       {editingAssignment && (
-        <Modal title="Modifica assegnazione" onClose={() => setEditingAssignment(null)}>
+        <Modal title={t('scheduler.editAssignment')} onClose={() => setEditingAssignment(null)}>
           <form className="assign-edit-form" onSubmit={handleSaveAssignment}>
             <div className="field">
-              <label htmlFor="ae-name">Nome nave</label>
+              <label htmlFor="ae-name">{t('common.shipName')}</label>
               <input id="ae-name" value={assignForm.name}
                      onChange={(e) => setAssignForm((f) => ({ ...f, name: e.target.value }))} required />
             </div>
             <div className="field">
-              <label htmlFor="ae-berth">Banchina (taglia {editingAssignment.size})</label>
+              <label htmlFor="ae-berth">{t('scheduler.berthWithSize', { size: editingAssignment.size })}</label>
               <select id="ae-berth" value={assignForm.berthId}
                       onChange={(e) => setAssignForm((f) => ({ ...f, berthId: e.target.value }))}>
                 {dashboard.berths.filter((b) => b.size === editingAssignment.size).map((b) => (
@@ -593,7 +600,7 @@ export default function SchedulerView({ focusBerth = null }) {
               </select>
             </div>
             <div className="field">
-              <label htmlFor="ae-notes">Note <span className="field__optional">(es. perché questa banchina)</span></label>
+              <label htmlFor="ae-notes">{t('common.notes')} <span className="field__optional">{t('scheduler.notesHint')}</span></label>
               <textarea id="ae-notes" value={assignForm.notes}
                         onChange={(e) => setAssignForm((f) => ({ ...f, notes: e.target.value }))}
                         rows={3} maxLength={2000} />
@@ -601,12 +608,12 @@ export default function SchedulerView({ focusBerth = null }) {
             <div className="assign-edit-actions">
               <button type="button" className="btn btn-danger"
                       onClick={() => { const a = editingAssignment; setEditingAssignment(null); handleUnassign(a); }}>
-                Riporta in attesa
+                {t('scheduler.backToWaiting')}
               </button>
               <span className="assign-edit-spacer" />
-              <button type="button" className="btn btn-ghost" onClick={() => setEditingAssignment(null)}>Annulla</button>
+              <button type="button" className="btn btn-ghost" onClick={() => setEditingAssignment(null)}>{t('common.cancel')}</button>
               <button type="submit" className="btn btn-primary" disabled={savingAssign || !assignForm.name.trim()}>
-                {savingAssign ? 'Salvo…' : 'Salva'}
+                {savingAssign ? t('common.saving') : t('common.save')}
               </button>
             </div>
           </form>

@@ -1,11 +1,17 @@
 import { createContext, useCallback, useContext, useRef, useState } from 'react';
 import Toast from '../components/Toast.jsx';
+import { usePrefs } from './PrefsContext.jsx';
+import { translateApiError } from '../i18n/copy.js';
 
 // Espone ESATTAMENTE le due funzioni che i componenti usano:
 // showSuccess / showError. Ogni toast sparisce da solo dopo 4 secondi.
+// Gli errori del backend arrivano sempre in italiano: qui li traduciamo nella
+// lingua corrente (fallback morbido all'italiano se il messaggio non è noto),
+// così i chiamanti restano invariati (showError(err.message)).
 const ToastContext = createContext(null);
 
 export function ToastProvider({ children }) {
+  const { lang } = usePrefs();
   const [toasts, setToasts] = useState([]);
   const nextId = useRef(1);
 
@@ -18,7 +24,10 @@ export function ToastProvider({ children }) {
   }, []);
 
   const showSuccess = useCallback((message) => pushToast('success', message), [pushToast]);
-  const showError = useCallback((message) => pushToast('error', message), [pushToast]);
+  const showError = useCallback(
+    (message) => pushToast('error', translateApiError(message, lang)),
+    [pushToast, lang],
+  );
 
   return (
     <ToastContext.Provider value={{ showSuccess, showError }}>

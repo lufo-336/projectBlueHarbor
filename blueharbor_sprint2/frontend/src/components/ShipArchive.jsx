@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../services/api.js';
 import { useDay } from '../context/DayContext.jsx';
-import { useDayLabel } from '../context/PrefsContext.jsx';
+import { useDayLabel, useDurationLabel, useT } from '../context/PrefsContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
-import { formatDuration } from '../services/time.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import './ShipArchive.css';
 
@@ -14,6 +13,8 @@ const PAGE_SIZE = 12;
 export default function ShipArchive() {
   const { currentDay } = useDay();
   const fmtDay = useDayLabel();
+  const fmtDuration = useDurationLabel();
+  const t = useT();
   const { showError } = useToast();
   const [data, setData] = useState(null); // null = primo caricamento
   const [search, setSearch] = useState('');
@@ -47,28 +48,30 @@ export default function ShipArchive() {
     <section className="card ship-archive">
       <div className="ship-archive__head">
         <div>
-          <h2>Archivio navi partite</h2>
-          <p className="ship-archive__hint">
-            Navi che hanno completato l'occupazione (stato Partita). Sola lettura.
-          </p>
+          <h2>{t('archive.title')}</h2>
+          <p className="ship-archive__hint">{t('archive.hint')}</p>
         </div>
         <label className="field field--inline">
-          <span>Cerca</span>
-          <input type="search" value={search} placeholder="nome nave…"
+          <span>{t('common.search')}</span>
+          <input type="search" value={search} placeholder={t('common.shipSearchPlaceholder')}
                  onChange={(e) => changeSearch(e.target.value)} />
         </label>
       </div>
 
       {items.length === 0 ? (
         <p className="ship-archive__hint">
-          {q ? 'Nessuna nave partita corrisponde alla ricerca.' : 'Nessuna nave partita finora.'}
+          {q ? t('archive.emptySearch') : t('archive.emptyNone')}
         </p>
       ) : (
         <>
           <div className="ship-archive__wrap">
             <table className="ship-archive__table">
               <thead>
-                <tr><th>Nome</th><th>Taglia</th><th>Arrivo</th><th>Durata</th><th>Banchina</th><th>Occupazione</th><th>Note</th></tr>
+                <tr>
+                  <th>{t('common.name')}</th><th>{t('common.size')}</th><th>{t('common.arrival')}</th>
+                  <th>{t('common.duration')}</th><th>{t('common.berth')}</th><th>{t('common.occupation')}</th>
+                  <th>{t('common.notes')}</th>
+                </tr>
               </thead>
               <tbody>
                 {items.map((s) => (
@@ -76,14 +79,14 @@ export default function ShipArchive() {
                     <td className="ship-archive__name">{s.name}</td>
                     <td><span className="badge badge-size">{s.size}</span></td>
                     <td className="mono">{fmtDay(s.arrivalDay)}</td>
-                    <td>{formatDuration(s.duration)}</td>
-                    <td>{s.berthName ?? '—'}</td>
+                    <td>{fmtDuration(s.duration)}</td>
+                    <td>{s.berthName ?? t('common.dash')}</td>
                     <td className="mono">
                       {s.occupationStartDay != null
                         ? `${fmtDay(s.occupationStartDay)}–${fmtDay(s.occupationStartDay + s.duration - 1)}`
-                        : '—'}
+                        : t('common.dash')}
                     </td>
-                    <td className="ship-archive__notes" title={s.notes || ''}>{s.notes || '—'}</td>
+                    <td className="ship-archive__notes" title={s.notes || ''}>{s.notes || t('common.dash')}</td>
                   </tr>
                 ))}
               </tbody>
@@ -94,14 +97,14 @@ export default function ShipArchive() {
             <div className="ship-archive__pager">
               <button type="button" className="btn"
                       disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-                ← Precedente
+                {t('common.prev')}
               </button>
               <span className="ship-archive__pager-info mono">
-                Pagina {page} di {totalPages} · {total} navi partite
+                {t('archive.pagerInfo', { page, totalPages, total })}
               </span>
               <button type="button" className="btn"
                       disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
-                Successiva →
+                {t('common.next')}
               </button>
             </div>
           )}

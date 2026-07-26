@@ -5,7 +5,7 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>BlueHarbor Terminal</title>
-    <!-- Imposta il tema PRIMA del render per evitare il flash chiaro->scuro. -->
+    <!-- Imposta tema e lingua PRIMA del render (no flash chiaro->scuro, <html lang> coerente). -->
     <script>
       (function () {
         try {
@@ -14,7 +14,12 @@
             t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
           }
           document.documentElement.dataset.theme = t;
-        } catch (e) { /* localStorage non disponibile: si usa il default chiaro */ }
+          var l = localStorage.getItem('blueharbor_lang');
+          if (l !== 'it' && l !== 'en') {
+            l = (navigator.language || '').toLowerCase().indexOf('en') === 0 ? 'en' : 'it';
+          }
+          document.documentElement.lang = l;
+        } catch (e) { /* localStorage non disponibile: si usano i default (tema chiaro, lingua it) */ }
       })();
     </script>
   </head>

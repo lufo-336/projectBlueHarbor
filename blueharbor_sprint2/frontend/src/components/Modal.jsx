@@ -1,9 +1,11 @@
 import { useEffect } from 'react';
+import { useT } from '../context/PrefsContext.jsx';
 import './Modal.css';
 
 // Modale accessibile e coerente col design (al posto dei dialoghi nativi).
 // Chiude con Esc o click sull'overlay.
 export default function Modal({ title, onClose, children }) {
+  const t = useT();
   useEffect(() => {
     function onKey(e) { if (e.key === 'Escape') onClose(); }
     document.addEventListener('keydown', onKey);
@@ -16,7 +18,7 @@ export default function Modal({ title, onClose, children }) {
            onMouseDown={(e) => e.stopPropagation()}>
         <div className="modal__head">
           <h2>{title}</h2>
-          <button type="button" className="modal__close" onClick={onClose} aria-label="Chiudi">✕</button>
+          <button type="button" className="modal__close" onClick={onClose} aria-label={t('common.close')}>✕</button>
         </div>
         <div className="modal__body">{children}</div>
       </div>

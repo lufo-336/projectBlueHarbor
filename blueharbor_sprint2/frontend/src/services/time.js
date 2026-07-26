@@ -1,9 +1,13 @@
 // ============================================================================
-// Formattazione del tempo. Il giorno virtuale intero `gN` resta la verità del
-// dominio; la data calendario è solo una PROIEZIONE derivata da Day1Date, mai
-// usata nella logica. La modalità (day/date) decide quale mostrare in primo
-// piano ed è una preferenza UI (vedi PrefsContext).
+// Formattazione del tempo. Il giorno virtuale intero `gN`/`dN` resta la verità
+// del dominio; la data calendario è solo una PROIEZIONE derivata da Day1Date,
+// mai usata nella logica. La modalità (day/date) decide quale mostrare in primo
+// piano ed è una preferenza UI (vedi PrefsContext). `lang` decide locale della
+// data, prefisso del giorno (g/d) e unità di durata (giorni/days).
 // ============================================================================
+
+const localeFor = (lang) => (lang === 'en' ? 'en-GB' : 'it-IT');
+const dayPrefix = (lang) => (lang === 'en' ? 'd' : 'g');
 
 /** Data calendario del giorno virtuale `dayNumber` (giorno 1 = day1Date). */
 export function dayToDate(dayNumber, day1Date) {
@@ -13,10 +17,10 @@ export function dayToDate(dayNumber, day1Date) {
 
 /**
  * Etichetta di un GIORNO (istante), es. arrivo o giorno evento.
- * mode 'date' → "20 giu" se Day1Date è noto, altrimenti ripiega su "g13".
- * mode 'day'  → "g13" (o "13" senza prefisso).
+ * mode 'date' → "20 giugno"/"20 June" se Day1Date è noto, altrimenti "g13"/"d13".
+ * mode 'day'  → "g13"/"d13" (o "13" senza prefisso).
  */
-export function formatDay(dayNumber, { mode = 'day', day1Date = null, withPrefix = true, compact = false } = {}) {
+export function formatDay(dayNumber, { mode = 'day', day1Date = null, withPrefix = true, compact = false, lang = 'it' } = {}) {
   if (dayNumber === null || dayNumber === undefined) return '—';
   if (mode === 'date') {
     const d = dayToDate(dayNumber, day1Date);
@@ -25,10 +29,10 @@ export function formatDay(dayNumber, { mode = 'day', day1Date = null, withPrefix
       // esteso = "20 giugno" (mese per intero, non abbreviato).
       return compact
         ? `${d.getDate()}/${d.getMonth() + 1}`
-        : d.toLocaleDateString('it-IT', { day: 'numeric', month: 'long' });
+        : d.toLocaleDateString(localeFor(lang), { day: 'numeric', month: 'long' });
     }
   }
-  return withPrefix ? `g${dayNumber}` : String(dayNumber);
+  return withPrefix ? `${dayPrefix(lang)}${dayNumber}` : String(dayNumber);
 }
 
 /**
@@ -39,8 +43,9 @@ export function formatDayRange(start, endExclusive, opts = {}) {
   return `${formatDay(start, opts)} – ${formatDay(endExclusive - 1, opts)}`;
 }
 
-/** Etichetta di una DURATA (conteggio di giorni): sempre "N giorni", mai "gN". */
-export function formatDuration(days) {
+/** Etichetta di una DURATA (conteggio di giorni): "N giorni"/"N days", mai "gN". */
+export function formatDuration(days, lang = 'it') {
+  if (lang === 'en') return days === 1 ? '1 day' : `${days} days`;
   return days === 1 ? '1 giorno' : `${days} giorni`;
 }
 
