@@ -1,7 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../services/api.js';
 import { useDay } from '../context/DayContext.jsx';
+import { useDayLabel } from '../context/PrefsContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
+import { formatDuration } from '../services/time.js';
+import { randomShipName } from '../services/shipNames.js';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import './OperatorView.css';
 
@@ -10,23 +13,30 @@ const PAGE_SIZE = 10;
 
 export default function OperatorView() {
   const { currentDay } = useDay();
+  const fmtDay = useDayLabel();
   const { showSuccess, showError } = useToast();
   const [data, setData] = useState(null); // null = primo caricamento in corso
   const [name, setName] = useState('');
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [cancellingId, setCancellingId] = useState(null); // id della nave in fase di annullamento
+  const [highlightId, setHighlightId] = useState(null); // nave appena creata, evidenziata
 
-  // Filtri e paginazione (guidano la query verso il backend).
+  // Filtri, ricerca e paginazione (guidano la query verso il backend).
   const [statusFilter, setStatusFilter] = useState('');
   const [sizeFilter, setSizeFilter] = useState('');
+  const [search, setSearch] = useState('');   // valore digitato (immediato)
+  const [q, setQ] = useState('');              // valore applicato (debounced)
   const [page, setPage] = useState(1);
+  const searchTimer = useRef(null);
+  const highlightTimer = useRef(null);
 
   const loadShips = useCallback(async () => {
     try {
       setData(await api.getShips({
         status: statusFilter,
         size: sizeFilter,
+        q,
         page,
         pageSize: PAGE_SIZE,
       }));
@@ -35,15 +45,25 @@ export default function OperatorView() {
       setData({ items: [], page: 1, pageSize: PAGE_SIZE, total: 0, totalPages: 0,
                 counts: { pending: 0, assigned: 0, departed: 0 } });
     }
-  }, [showError, statusFilter, sizeFilter, page]);
+  }, [showError, statusFilter, sizeFilter, q, page]);
 
-  // Ricarica al mount, quando cambiano filtri/pagina e a ogni Next Day.
+  // Ricarica al mount, quando cambiano filtri/ricerca/pagina e a ogni Next Day.
   useEffect(() => { loadShips(); }, [loadShips, currentDay]);
 
   // Cambiare filtro riporta sempre alla prima pagina (altrimenti si potrebbe
   // restare su una pagina che il nuovo filtro non ha).
   function changeStatusFilter(value) { setStatusFilter(value); setPage(1); }
   function changeSizeFilter(value) { setSizeFilter(value); setPage(1); }
+
+  // Ricerca per nome con debounce: l'input è immediato, la query parte dopo
+  // 300ms di pausa (niente una richiesta per tasto). Nessun useEffect dedicato.
+  function changeSearch(value) {
+    setSearch(value);
+    clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => { setQ(value.trim()); setPage(1); }, 300);
+  }
+
+  function handleRandomName() { setName(randomShipName()); }
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -53,9 +73,13 @@ export default function OperatorView() {
     try {
       const ship = await api.createShip(trimmed, notes.trim() || null);
       // Il toast mostra i dati GENERATI dal sistema: è il cuore del flusso Operatore.
-      showSuccess(`${ship.name} registrata — taglia ${ship.size}, arrivo giorno ${ship.arrivalDay}, durata ${ship.duration}gg.`);
+      showSuccess(`${ship.name} registrata — taglia ${ship.size}, arrivo ${fmtDay(ship.arrivalDay)}, durata ${formatDuration(ship.duration)}.`);
       setName('');
       setNotes('');
+      // Evidenzia la nave appena creata (se ricade nella pagina visibile).
+      setHighlightId(ship.id);
+      clearTimeout(highlightTimer.current);
+      highlightTimer.current = setTimeout(() => setHighlightId(null), 2600);
       await loadShips();
     } catch (err) {
       showError(err.message);
@@ -84,7 +108,7 @@ export default function OperatorView() {
   if (data === null) return <LoadingSpinner />;
 
   const { items, total, totalPages, counts } = data;
-  const filtersActive = statusFilter !== '' || sizeFilter !== '';
+  const filtersActive = statusFilter !== '' || sizeFilter !== '' || q !== '';
 
   return (
     <div className="operator">
@@ -109,17 +133,23 @@ export default function OperatorView() {
           Inserisci solo il nome: taglia, giorno di arrivo e durata li genera il sistema.
         </p>
         <form className="operator__form" onSubmit={handleSubmit}>
-          <div className="field">
+          <div className="field operator__field-name">
             <label htmlFor="ship-name">Nome della nave</label>
-            <input id="ship-name" value={name} onChange={(e) => setName(e.target.value)}
-                   placeholder="Es. Aurora" required />
+            <div className="operator__name-row">
+              <input id="ship-name" value={name} onChange={(e) => setName(e.target.value)}
+                     placeholder="Es. Aurora" required />
+              <button type="button" className="btn btn-ghost operator__dice"
+                      onClick={handleRandomName} title="Genera un nome" aria-label="Genera un nome casuale">
+                🎲
+              </button>
+            </div>
           </div>
-          <div className="field">
+          <div className="field operator__field-notes">
             <label htmlFor="ship-notes">Note <span className="field__optional">(facoltative)</span></label>
             <textarea id="ship-notes" value={notes} onChange={(e) => setNotes(e.target.value)}
                       placeholder="Es. carico refrigerato, priorità alta…" rows={2} maxLength={255} />
           </div>
-          <button type="submit" className="btn btn-primary" disabled={submitting}>
+          <button type="submit" className="btn btn-primary operator__submit" disabled={submitting}>
             {submitting ? 'Registro…' : 'Registra'}
           </button>
         </form>
@@ -129,6 +159,11 @@ export default function OperatorView() {
         <div className="operator__list-head">
           <h2>Navi registrate</h2>
           <div className="operator__filters">
+            <label className="field field--inline operator__search">
+              <span>Cerca</span>
+              <input type="search" value={search} placeholder="nome nave…"
+                     onChange={(e) => changeSearch(e.target.value)} />
+            </label>
             <label className="field field--inline">
               <span>Stato</span>
               <select value={statusFilter} onChange={(e) => changeStatusFilter(e.target.value)}>
@@ -166,11 +201,11 @@ export default function OperatorView() {
                 </thead>
                 <tbody>
                   {items.map((ship) => (
-                    <tr key={ship.id}>
-                      <td>{ship.name}</td>
+                    <tr key={ship.id} className={ship.id === highlightId ? 'is-new' : ''}>
+                      <td className="operator__name-cell">{ship.name}</td>
                       <td><span className="badge badge-size">{ship.size}</span></td>
-                      <td className="mono">g{ship.arrivalDay}</td>
-                      <td className="mono">{ship.duration}gg</td>
+                      <td className="mono">{fmtDay(ship.arrivalDay)}</td>
+                      <td>{formatDuration(ship.duration)}</td>
                       <td>
                         <span className={`badge badge-${ship.status.toLowerCase()}`}>
                           {STATUS_LABELS[ship.status]}

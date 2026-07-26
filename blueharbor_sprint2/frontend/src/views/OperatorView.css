@@ -7,9 +7,17 @@
 
 .operator__hint { color: var(--text-muted); font-size: 0.9rem; }
 
-.operator__form { display: flex; gap: 0.75rem; align-items: end; flex-wrap: wrap; }
-.operator__form .field { flex: 1; min-width: 220px; }
-.operator__form textarea { resize: vertical; font: inherit; }
+/* Form a griglia: nome | note | invio, allineati in basso così i "box" restano
+   uniformi anche se la textarea è più alta dell'input. */
+.operator__form {
+  display: grid; gap: 0.75rem 1rem; align-items: end;
+  grid-template-columns: minmax(220px, 1fr) minmax(240px, 1.4fr) auto;
+}
+@media (max-width: 720px) { .operator__form { grid-template-columns: 1fr; } }
+.operator__form textarea { resize: vertical; min-height: 42px; }
+.operator__name-row { display: flex; gap: 0.4rem; }
+.operator__name-row input { flex: 1; min-width: 0; }
+.operator__dice { padding: 0.5rem 0.7rem; line-height: 1; }
 .field__optional { color: var(--text-muted); font-weight: 400; font-size: 0.85em; }
 
 .operator__list-head {
@@ -37,4 +45,15 @@
 .operator__notes {
   max-width: 220px; white-space: nowrap;
   overflow: hidden; text-overflow: ellipsis; color: var(--text-muted);
+}
+
+/* Il nome è il dato-chiave della riga: più forte del resto. */
+.operator__name-cell { font-weight: 700; color: var(--text); }
+.operator__search input { min-width: 160px; }
+
+/* Evidenziazione transitoria della nave appena creata. */
+.operator__table tr.is-new { animation: operator-new 2.6s ease-out; }
+@keyframes operator-new {
+  0%   { background: var(--sahara-pale); }
+  100% { background: transparent; }
 }

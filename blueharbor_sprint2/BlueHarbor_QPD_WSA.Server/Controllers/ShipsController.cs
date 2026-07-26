@@ -37,6 +37,7 @@ public class ShipsController : ControllerBase
     //  Query param opzionali:
     //    ?status=Pending|Assigned|Departed   filtra per stato
     //    ?size=S|M|L|XL                        filtra per taglia
+    //    ?q=aur                                 ricerca per nome (contiene, ignora maiuscole)
     //    ?page=1 (>=1)                          pagina (default 1)
     //    ?pageSize=20 (1..100)                  ampiezza pagina (default 20)
     //  Ordinamento stabile per Id. Risposta: ShipPageResponse (items + meta + counts).
@@ -46,6 +47,7 @@ public class ShipsController : ControllerBase
     public async Task<IActionResult> GetShips(
         [FromQuery] string? status = null,
         [FromQuery] string? size = null,
+        [FromQuery] string? q = null,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20)
     {
@@ -100,6 +102,10 @@ public class ShipsController : ControllerBase
         var query = _context.Ships.AsQueryable();
         if (statusFilter is not null) query = query.Where(s => s.Status == statusFilter);
         if (sizeFilter is not null) query = query.Where(s => s.Size == sizeFilter);
+        // Ricerca per nome: EF traduce Contains in LIKE %q% (case-insensitive
+        // con la collation di default di SQL Server). Applicata prima di Skip/Take.
+        var nameQuery = q?.Trim();
+        if (!string.IsNullOrEmpty(nameQuery)) query = query.Where(s => s.Name.Contains(nameQuery));
 
         var total = await query.CountAsync();
         var totalPages = total == 0 ? 0 : (int)Math.Ceiling(total / (double)pageSize);
