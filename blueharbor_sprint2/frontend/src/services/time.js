@@ -21,10 +21,11 @@ export function formatDay(dayNumber, { mode = 'day', day1Date = null, withPrefix
   if (mode === 'date') {
     const d = dayToDate(dayNumber, day1Date);
     if (d) {
-      // compact = numerico "20/6" (per le colonne strette della timeline).
+      // compact = numerico "20/6" (per le colonne strette della timeline);
+      // esteso = "20 giugno" (mese per intero, non abbreviato).
       return compact
         ? `${d.getDate()}/${d.getMonth() + 1}`
-        : d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' });
+        : d.toLocaleDateString('it-IT', { day: 'numeric', month: 'long' });
     }
   }
   return withPrefix ? `g${dayNumber}` : String(dayNumber);

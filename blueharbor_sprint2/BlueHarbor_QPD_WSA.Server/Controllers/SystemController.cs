@@ -38,4 +38,32 @@ public class SystemController : ControllerBase
         var day1 = await _context.Settings.FirstOrDefaultAsync(s => s.Key == "Day1Date");
         return Ok(new { currentDay, day1Date = day1?.Value });
     }
+
+    /// <summary>
+    /// Riepilogo del terminal a colpo d'occhio (per la navbar, ogni ruolo):
+    /// conteggi navi per stato e banchine occupate ORA sul totale.
+    /// </summary>
+    [HttpGet("summary")]
+    public async Task<IActionResult> GetSummary()
+    {
+        var setting = await _context.Settings.FirstOrDefaultAsync(s => s.Key == "CurrentVirtualDay");
+        var currentDay = (setting is not null && int.TryParse(setting.Value, out var d)) ? d : 0;
+
+        var pending = await _context.Ships.CountAsync(s => s.Status == ShipStatus.Pending);
+        var assigned = await _context.Ships.CountAsync(s => s.Status == ShipStatus.Assigned);
+        var departed = await _context.Ships.CountAsync(s => s.Status == ShipStatus.Departed);
+
+        var berthsTotal = await _context.Berths.CountAsync();
+        // Occupata ORA: un'assegnazione con OccupationStartDay <= currentDay < start + durata.
+        var berthsOccupied = await _context.Ships
+            .Where(s => s.Status == ShipStatus.Assigned
+                     && s.OccupationStartDay != null
+                     && s.OccupationStartDay <= currentDay
+                     && currentDay < s.OccupationStartDay + s.Duration)
+            .Select(s => s.BerthId)
+            .Distinct()
+            .CountAsync();
+
+        return Ok(new { currentDay, pending, assigned, departed, berthsTotal, berthsOccupied });
+    }
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useDay } from '../context/DayContext.jsx';
 import { usePrefs } from '../context/PrefsContext.jsx';
@@ -14,6 +14,16 @@ export default function Topbar() {
   const { theme, timeMode, toggleTheme, toggleTimeMode } = usePrefs();
   const { showSuccess, showError } = useToast();
   const [advancing, setAdvancing] = useState(false);
+  const [summary, setSummary] = useState(null);
+
+  // Riepilogo terminal per la navbar: si aggiorna a ogni Next Day e ogni 12s.
+  useEffect(() => {
+    let alive = true;
+    const load = () => api.getSummary().then((s) => { if (alive) setSummary(s); }).catch(() => {});
+    load();
+    const id = setInterval(load, 12000);
+    return () => { alive = false; clearInterval(id); };
+  }, [currentDay]);
 
   // "Next Day": avanza il giorno virtuale. Le viste si ricaricano da sole
   // perché osservano currentDay dal DayContext.
@@ -32,8 +42,8 @@ export default function Topbar() {
 
   // Data calendario derivata dal giorno virtuale (solo proiezione, mai logica).
   const date = currentDay !== null ? dayToDate(currentDay, day1Date) : null;
-  const dateStr = date && date.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' });
-  const dayStr = currentDay === null ? '—' : String(currentDay).padStart(2, '0');
+  const dateStr = date && date.toLocaleDateString('it-IT', { day: 'numeric', month: 'long' });
+  const dayStr = currentDay === null ? '—' : String(currentDay);
   const role = roleLabel(user.role);
   const initial = role.charAt(0).toUpperCase();
 
@@ -60,11 +70,22 @@ export default function Topbar() {
         </span>
       </div>
 
+      {summary && (
+        <div className="topbar__summary" aria-label="Riepilogo del terminal">
+          <span className="topbar__stat"><b className="mono">{summary.pending}</b> in attesa</span>
+          <span className="topbar__stat"><b className="mono">{summary.assigned}</b> assegnate</span>
+          <span className="topbar__stat"><b className="mono">{summary.departed}</b> partite</span>
+          <span className="topbar__stat topbar__stat--berths">
+            <b className="mono">{summary.berthsOccupied}/{summary.berthsTotal}</b> banchine occupate
+          </span>
+        </div>
+      )}
+
       <div className="topbar__right">
         {/* Giorno virtuale + Next Day: un'unica unità coesa. */}
         <div className="topbar__daybox">
           <span className="topbar__day mono">
-            {timeMode === 'date' ? (dateStr ?? '—') : `GIORNO ${dayStr}`}
+            {timeMode === 'date' ? (dateStr ?? '—') : `Giorno ${dayStr}`}
           </span>
           <button className="btn btn-gold topbar__next" onClick={handleNextDay} disabled={advancing}>
             {advancing ? 'Avanzo…' : 'Next Day →'}

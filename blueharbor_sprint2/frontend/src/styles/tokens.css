@@ -29,8 +29,8 @@
 
   /* Token semantici (sono questi a cambiare nel tema scuro) */
   --bg:         var(--grey-50);
-  --sea-1:      #EDF4FB;   /* gradiente "mare": alto */
-  --sea-2:      #BFD6EF;   /* gradiente "mare": basso */
+  --sea-1:      #E7F1FB;   /* gradiente "mare": alto */
+  --sea-2:      #A6C6E9;   /* gradiente "mare": basso */
   --surface:    #FFFFFF;
   --surface-2:  var(--grey-100);
   --text:       var(--grey-800);
@@ -51,6 +51,15 @@
   /* Tipografia: i numeri "di carico" vanno in monospace tabellare (.mono) */
   --font: system-ui, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'Cascadia Mono', Consolas, 'Courier New', monospace;
+
+  /* Scala delle dimensioni del testo: unica fonte, riusata ovunque.
+     xs = micro/etichette tabella · sm = testo di supporto · md = corpo
+     lg = sottotitoli/h3 · xl = titoli di card/h2 */
+  --fs-xs: 0.78rem;
+  --fs-sm: 0.85rem;
+  --fs-md: 0.95rem;
+  --fs-lg: 1.05rem;
+  --fs-xl: 1.3rem;
 }
 
 /* Tema scuro. Le variabili sono le stesse in due contesti:
@@ -60,7 +69,7 @@
 :root[data-theme="dark"] {
   --bg:         #0B1526;
   --sea-1:      #0A1526;
-  --sea-2:      #0E2B4C;
+  --sea-2:      #0F3660;
   --surface:    #122036;
   --surface-2:  #182A46;
   --text:       var(--grey-100);

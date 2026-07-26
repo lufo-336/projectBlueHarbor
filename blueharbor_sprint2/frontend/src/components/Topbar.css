@@ -14,6 +14,15 @@
   color: var(--sahara-light);
 }
 
+/* --- Riepilogo terminal (centro navbar) --- */
+.topbar__summary {
+  display: inline-flex; align-items: center; gap: 0.4rem 1rem; flex-wrap: wrap;
+  color: var(--grey-400); font-size: var(--fs-sm);
+}
+.topbar__stat { display: inline-flex; align-items: baseline; gap: 0.35rem; white-space: nowrap; }
+.topbar__stat b { color: var(--grey-100); font-weight: 700; font-size: var(--fs-md); }
+.topbar__stat--berths b { color: var(--sahara-light); }
+
 /* --- Gruppo destro: giorno, strumenti, identità --- */
 .topbar__right { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
 

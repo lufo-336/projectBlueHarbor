@@ -11,12 +11,12 @@ body {
      Tinte da --sea-1/--sea-2 (tema-aware); le onde restano leggere per non
      disturbare la lettura di tabelle e timeline dentro le card. */
   background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 240' preserveAspectRatio='none'%3E%3Cpath fill='%234A90C2' fill-opacity='0.30' d='M0,140 C240,220 480,50 720,120 C960,190 1200,60 1440,140 L1440,240 L0,240 Z'/%3E%3Cpath fill='%234A90C2' fill-opacity='0.20' d='M0,175 C240,110 480,225 720,165 C960,105 1200,215 1440,160 L1440,240 L0,240 Z'/%3E%3Cpath fill='%235AA6D8' fill-opacity='0.14' d='M0,205 C240,165 480,235 720,200 C960,165 1200,230 1440,195 L1440,240 L0,240 Z'/%3E%3C/svg%3E"),
-    radial-gradient(1200px 460px at 50% 0%, rgba(74, 144, 194, 0.26), transparent 72%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 300' preserveAspectRatio='none'%3E%3Cpath fill='%234A90C2' fill-opacity='0.38' d='M0,170 C240,270 480,60 720,145 C960,230 1200,70 1440,170 L1440,300 L0,300 Z'/%3E%3Cpath fill='%233F86BE' fill-opacity='0.26' d='M0,215 C240,140 480,280 720,205 C960,130 1200,265 1440,200 L1440,300 L0,300 Z'/%3E%3Cpath fill='%235AA6D8' fill-opacity='0.18' d='M0,255 C240,205 480,290 720,250 C960,210 1200,285 1440,245 L1440,300 L0,300 Z'/%3E%3C/svg%3E"),
+    radial-gradient(1300px 520px at 50% -4%, rgba(74, 144, 194, 0.34), transparent 72%),
     linear-gradient(180deg, var(--sea-1), var(--sea-2));
   background-repeat: no-repeat, no-repeat, no-repeat;
   background-position: bottom center, top center, center;
-  background-size: 100% 240px, 100% 480px, cover;
+  background-size: 100% 300px, 100% 560px, cover;
   background-attachment: fixed, fixed, fixed;
   -webkit-font-smoothing: antialiased;
 }
@@ -37,6 +37,9 @@ body {
 }
 
 h1, h2 { margin-top: 0; }
+/* Gerarchia dei titoli coerente (una sola scala). */
+h2 { font-size: var(--fs-xl); }
+h3 { font-size: var(--fs-lg); }
 
 .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 

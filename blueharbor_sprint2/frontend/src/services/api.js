@@ -147,6 +147,7 @@ export const api = {
 
   // --- Tempo virtuale ---
   getCurrentDay: () => request('/api/system/current-day'),
+  getSummary: () => request('/api/system/summary'),
   nextDay: () => request('/api/time/next-day', { method: 'POST' }),
 
   // --- Gestione accessi (ruolo Admin) ---
