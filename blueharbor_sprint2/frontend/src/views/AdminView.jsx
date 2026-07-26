@@ -16,6 +16,19 @@ import './AdminView.css';
 // endpoint esistenti, che ora accettano anche il ruolo Admin.
 export default function AdminView() {
   const [tab, setTab] = useState('users');
+  const [focusBerth, setFocusBerth] = useState(null);
+
+  // La navbar può chiedere di aprire lo Scheduler su una banchina: passo alla
+  // tab Scheduler e inoltro la richiesta come prop (nonce per ri-scattare).
+  useEffect(() => {
+    const onGoto = (e) => {
+      setTab('scheduler');
+      setFocusBerth({ berthId: e.detail?.berthId, nonce: Date.now() });
+    };
+    window.addEventListener('bh:goto-berth', onGoto);
+    return () => window.removeEventListener('bh:goto-berth', onGoto);
+  }, []);
+
   return (
     <div className="admin">
       <nav className="admin__tabs" aria-label="Sezioni Admin">
@@ -29,7 +42,7 @@ export default function AdminView() {
       {tab === 'maintenance' && <MaintenanceManagement />}
       {tab === 'archive' && <ShipArchive />}
       {tab === 'operator' && <OperatorView />}
-      {tab === 'scheduler' && <SchedulerView />}
+      {tab === 'scheduler' && <SchedulerView focusBerth={focusBerth} />}
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { useToast } from '../context/ToastContext.jsx';
 import { api } from '../services/api.js';
 import { dayToDate } from '../services/time.js';
 import { roleLabel } from '../services/roles.js';
+import { requestBerthFocus } from '../services/nav.js';
 import './Topbar.css';
 
 export default function Topbar() {
@@ -46,6 +47,9 @@ export default function Topbar() {
   const dayStr = currentDay === null ? '—' : String(currentDay);
   const role = roleLabel(user.role);
   const initial = role.charAt(0).toUpperCase();
+  // Solo Scheduler e Admin possono aprire lo Scheduler; l'Operatore non vi ha
+  // accesso, quindi per lui le celle restano informative (non cliccabili).
+  const canOpenScheduler = user.role === 'Scheduler' || user.role === 'Admin';
 
   return (
     <header className="topbar">
@@ -80,10 +84,15 @@ export default function Topbar() {
               const groupStart = i > 0 && b.size !== summary.berths[i - 1].size;
               const label = b.state === 'maintenance' ? 'in manutenzione'
                           : b.state === 'occupied' ? 'occupata' : 'libera';
-              return (
-                <span key={b.id}
-                      className={`bmap-cell bmap-cell--${b.state}${groupStart ? ' bmap-cell--gap' : ''}`}
-                      title={`${b.name} · ${label}`}>
+              const cls = `bmap-cell bmap-cell--${b.state}${groupStart ? ' bmap-cell--gap' : ''}`;
+              return canOpenScheduler ? (
+                <button key={b.id} type="button" className={`${cls} bmap-cell--btn`}
+                        title={`${b.name} · ${label} · apri nello Scheduler`}
+                        onClick={() => requestBerthFocus(b.id)}>
+                  {b.size}
+                </button>
+              ) : (
+                <span key={b.id} className={cls} title={`${b.name} · ${label}`}>
                   {b.size}
                 </span>
               );

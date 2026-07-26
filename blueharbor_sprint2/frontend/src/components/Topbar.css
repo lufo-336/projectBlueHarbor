@@ -20,14 +20,16 @@
 .topbar__berthmap-label b { color: var(--sahara-light); font-weight: 700; }
 .bmap { display: inline-flex; align-items: center; gap: 3px; }
 .bmap-cell {
-  width: 27px; height: 22px; border-radius: 5px;
+  width: 27px; height: 22px; border-radius: 5px; padding: 0;
   display: inline-flex; align-items: center; justify-content: center;
   font-size: 0.62rem; font-weight: 700; font-family: var(--font-mono);
   border: 1px solid rgba(255, 255, 255, 0.16); color: var(--grey-400);
   background: rgba(255, 255, 255, 0.05);
-  transition: transform 120ms ease;
+  transition: transform 120ms ease, box-shadow 120ms ease;
 }
-.bmap-cell:hover { transform: translateY(-1px); }
+/* Solo Scheduler/Admin: la cella è un bottone (si solleva all'hover). */
+.bmap-cell--btn { cursor: pointer; }
+.bmap-cell--btn:hover { transform: translateY(-1px); box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.20); }
 .bmap-cell--gap { margin-left: 8px; }
 /* Occupata = blu pieno (come l'occupazione in timeline); manutenzione = tratteggio;
    libera = cella tenue con solo il bordo. */

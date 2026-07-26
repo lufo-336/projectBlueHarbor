@@ -30,7 +30,7 @@ function maxHorizonOffset(d) {
   return maxStart - d.currentDay;
 }
 
-export default function SchedulerView() {
+export default function SchedulerView({ focusBerth = null }) {
   const { currentDay } = useDay();
   const fmtDay = useDayLabel();
   const { showSuccess, showError } = useToast();
@@ -43,8 +43,45 @@ export default function SchedulerView() {
   const [savingAssign, setSavingAssign] = useState(false);
   const [tip, setTip] = useState(null); // tooltip timeline (compare con delay)
   const [flashShipId, setFlashShipId] = useState(null); // nave evidenziata dopo il salto
+  const [flashBerthId, setFlashBerthId] = useState(null); // banchina evidenziata (clic dalla navbar)
   const tipTimer = useRef(null);
   const flashTimer = useRef(null);
+  const flashBerthTimer = useRef(null);
+
+  // Centra ed evidenzia una banchina nella timeline. Riprova per qualche frame
+  // se le righe non sono ancora montate (Admin che arriva da un'altra tab).
+  const flashBerth = useCallback((berthId) => {
+    // Retry via setTimeout (non rAF): scatta anche quando la tab non compone
+    // frame, e attende che le righe siano montate (Admin da un'altra tab).
+    const attempt = (id, tries = 0) => {
+      const el = document.querySelector(`[data-berth="${id}"]`);
+      if (!el) {
+        if (tries < 60) setTimeout(() => attempt(id, tries + 1), 16);
+        return;
+      }
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setFlashBerthId(id);
+      clearTimeout(flashBerthTimer.current);
+      flashBerthTimer.current = setTimeout(() => setFlashBerthId(null), 1500);
+    };
+    if (berthId != null) attempt(berthId);
+  }, []);
+
+  // Percorso "live" (ruolo Scheduler, vista già montata): evento dalla navbar.
+  useEffect(() => {
+    const onGoto = (e) => flashBerth(e.detail?.berthId);
+    window.addEventListener('bh:goto-berth', onGoto);
+    return () => window.removeEventListener('bh:goto-berth', onGoto);
+  }, [flashBerth]);
+
+  // Percorso Admin (arriva da un'altra tab): richiesta passata come prop.
+  useEffect(() => {
+    if (focusBerth?.berthId != null) {
+      const t = setTimeout(() => flashBerth(focusBerth.berthId), 0);
+      return () => clearTimeout(t);
+    }
+    return undefined;
+  }, [focusBerth, flashBerth]);
   const [history, setHistory] = useState(null); // storico assegnazioni (sola lettura)
   const [eventFilter, setEventFilter] = useState('');
   const [exporting, setExporting] = useState(false);
@@ -360,8 +397,8 @@ export default function SchedulerView() {
                 : null;
 
               return (
-                <div key={berth.id}
-                     className={`timeline__row ${compatible ? 'is-compatible' : ''} ${dimmed ? 'is-dimmed' : ''}`}>
+                <div key={berth.id} data-berth={berth.id}
+                     className={`timeline__row ${compatible ? 'is-compatible' : ''} ${dimmed ? 'is-dimmed' : ''} ${berth.id === flashBerthId ? 'is-berth-flash' : ''}`}>
                   <div className="timeline__label">
                     <div className="timeline__label-main">
                       <span className="timeline__berth">{berth.name}</span>
