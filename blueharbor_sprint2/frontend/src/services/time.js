@@ -16,11 +16,16 @@ export function dayToDate(dayNumber, day1Date) {
  * mode 'date' → "20 giu" se Day1Date è noto, altrimenti ripiega su "g13".
  * mode 'day'  → "g13" (o "13" senza prefisso).
  */
-export function formatDay(dayNumber, { mode = 'day', day1Date = null, withPrefix = true } = {}) {
+export function formatDay(dayNumber, { mode = 'day', day1Date = null, withPrefix = true, compact = false } = {}) {
   if (dayNumber === null || dayNumber === undefined) return '—';
   if (mode === 'date') {
     const d = dayToDate(dayNumber, day1Date);
-    if (d) return d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' });
+    if (d) {
+      // compact = numerico "20/6" (per le colonne strette della timeline).
+      return compact
+        ? `${d.getDate()}/${d.getMonth() + 1}`
+        : d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' });
+    }
   }
   return withPrefix ? `g${dayNumber}` : String(dayNumber);
 }

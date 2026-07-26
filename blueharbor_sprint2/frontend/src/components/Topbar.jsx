@@ -34,7 +34,8 @@ export default function Topbar() {
   const date = currentDay !== null ? dayToDate(currentDay, day1Date) : null;
   const dateStr = date && date.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' });
   const dayStr = currentDay === null ? '—' : String(currentDay).padStart(2, '0');
-  const initial = (user.name || user.email || '?').charAt(0).toUpperCase();
+  const role = roleLabel(user.role);
+  const initial = role.charAt(0).toUpperCase();
 
   return (
     <header className="topbar">
@@ -45,17 +46,7 @@ export default function Topbar() {
 
       <div className="topbar__clock">
         <span className="topbar__day mono">
-          {timeMode === 'date' && dateStr ? (
-            <>
-              {dateStr}
-              <span className="topbar__day-alt">· giorno {currentDay ?? '—'}</span>
-            </>
-          ) : (
-            <>
-              GIORNO {dayStr}
-              {dateStr && <span className="topbar__day-alt">· {dateStr}</span>}
-            </>
-          )}
+          {timeMode === 'date' ? (dateStr ?? '—') : `GIORNO ${dayStr}`}
         </span>
         <button className="btn btn-gold" onClick={handleNextDay} disabled={advancing}>
           {advancing ? 'Avanzo…' : 'Next Day →'}
@@ -80,12 +71,9 @@ export default function Topbar() {
           {theme === 'dark' ? '☀' : '☾'}
         </button>
 
-        <div className="topbar__identity">
+        <div className="topbar__identity" title={user.email}>
           <span className="topbar__avatar" aria-hidden="true">{initial}</span>
-          <span className="topbar__id-text">
-            <span className="topbar__user">{user.name}</span>
-            <span className="topbar__role">{roleLabel(user.role)}</span>
-          </span>
+          <span className="topbar__role-single">{role}</span>
         </div>
 
         <button className="btn btn-ghost topbar__logout" onClick={logout}>Esci</button>

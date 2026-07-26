@@ -147,7 +147,7 @@ export default function OperatorView() {
           <div className="field operator__field-notes">
             <label htmlFor="ship-notes">Note <span className="field__optional">(facoltative)</span></label>
             <textarea id="ship-notes" value={notes} onChange={(e) => setNotes(e.target.value)}
-                      placeholder="Es. carico refrigerato, priorità alta…" rows={2} maxLength={255} />
+                      placeholder="Es. carico refrigerato, priorità alta…" rows={3} maxLength={255} />
           </div>
           <button type="submit" className="btn btn-primary operator__submit" disabled={submitting}>
             {submitting ? 'Registro…' : 'Registra'}

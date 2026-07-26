@@ -7,14 +7,22 @@
 
 .operator__hint { color: var(--text-muted); font-size: 0.9rem; }
 
-/* Form a griglia: nome | note | invio, allineati in basso così i "box" restano
-   uniformi anche se la textarea è più alta dell'input. */
+/* Form a griglia: riga 1 = nome + invio; riga 2 = note a piena larghezza.
+   Così la textarea può crescere (o essere ridimensionata) senza sfasare
+   nome e bottone, che restano allineati sopra. */
 .operator__form {
   display: grid; gap: 0.75rem 1rem; align-items: end;
-  grid-template-columns: minmax(220px, 1fr) minmax(240px, 1.4fr) auto;
+  grid-template-columns: 1fr auto;
 }
-@media (max-width: 720px) { .operator__form { grid-template-columns: 1fr; } }
-.operator__form textarea { resize: vertical; min-height: 42px; }
+.operator__field-name  { grid-column: 1; grid-row: 1; }
+.operator__submit      { grid-column: 2; grid-row: 1; }
+.operator__field-notes { grid-column: 1 / -1; grid-row: 2; }
+@media (max-width: 720px) {
+  .operator__form { grid-template-columns: 1fr; }
+  .operator__field-name, .operator__submit, .operator__field-notes { grid-column: 1; grid-row: auto; }
+}
+/* La textarea cresce fin dove serve, ma non oltre (poi scorre internamente). */
+.operator__form textarea { resize: vertical; min-height: 64px; max-height: 200px; }
 .operator__name-row { display: flex; gap: 0.4rem; }
 .operator__name-row input { flex: 1; min-width: 0; }
 .operator__dice { padding: 0.5rem 0.7rem; line-height: 1; }

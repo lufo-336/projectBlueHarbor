@@ -51,7 +51,6 @@
   display: inline-flex; align-items: center; justify-content: center;
   background: var(--sahara); color: var(--cobalt); font-weight: 700; font-size: 0.9rem;
 }
-.topbar__id-text { display: flex; flex-direction: column; line-height: 1.15; }
-.topbar__user { font-size: 0.9rem; font-weight: 600; color: var(--grey-100); }
-.topbar__role { font-size: 0.72rem; color: var(--sahara-light); }
+/* Solo il ruolo, in italiano (l'email resta nel tooltip dell'identità). */
+.topbar__role-single { font-size: 0.9rem; font-weight: 600; color: var(--sahara-light); }
 .topbar__logout { color: var(--grey-100); }

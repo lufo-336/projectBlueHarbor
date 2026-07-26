@@ -96,10 +96,10 @@
 /* --- Timeline ---
    NB: repeat(14, ...) deve combaciare con TIMELINE_DAYS in SchedulerView.jsx */
 .timeline-scroll { overflow-x: auto; }
-.timeline { min-width: 980px; }
+.timeline { min-width: 1020px; }
 .timeline__row {
   display: grid;
-  grid-template-columns: 200px repeat(14, minmax(48px, 1fr));
+  grid-template-columns: 240px repeat(14, minmax(48px, 1fr));
   border-bottom: 1px solid var(--border);
 }
 .timeline__row--head { border-bottom: 2px solid var(--border); }
@@ -108,15 +108,22 @@
 
 .timeline__label {
   grid-row: 1; grid-column: 1;
-  display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
-  padding: 0.55rem 0.6rem; min-height: 56px;
+  /* Due righe (nome+taglia / stato+azione): altezza uniforme per TUTTE le
+     banchine, così la riga XL non "sballa" quando compare il tasto Assegna. */
+  display: flex; flex-direction: column; justify-content: center; gap: 0.3rem;
+  padding: 0.5rem 0.6rem; min-height: 62px;
   /* Colonna "congelata": resta a sinistra mentre i giorni scorrono sotto. */
   position: sticky; left: 0; z-index: 3;
   background: var(--surface); border-right: 1px solid var(--border);
 }
 .timeline__row--head .timeline__label { z-index: 4; }
+.timeline__label-main, .timeline__label-sub {
+  display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;
+}
 .timeline__berth { font-weight: 700; font-size: 0.9rem; }
-.timeline__assign { padding: 0.25rem 0.6rem; font-size: 0.8rem; }
+/* Compatto quanto il pallino di stato: così la riga con "Assegna" resta
+   sotto il min-height dell'etichetta e tutte le banchine hanno pari altezza. */
+.timeline__assign { padding: 0.12rem 0.5rem; font-size: 0.72rem; }
 
 .timeline__head { grid-row: 1; text-align: center; padding: 0.35rem 0; color: var(--text-muted); font-size: 0.8rem; }
 .timeline__cell { grid-row: 1; border-left: 1px solid var(--border); }

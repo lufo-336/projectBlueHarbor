@@ -226,7 +226,7 @@ export default function SchedulerView() {
               {days.map((day, i) => (
                 <div key={day} className={`timeline__head mono ${day === dashboard.currentDay ? 'is-today' : ''}`}
                      style={{ gridColumn: i + 2 }}>
-                  g{day}
+                  {fmtDay(day, { compact: true })}
                   {day === dashboard.currentDay && <span className="timeline__today-tag">oggi</span>}
                 </div>
               ))}
@@ -250,28 +250,32 @@ export default function SchedulerView() {
                 <div key={berth.id}
                      className={`timeline__row ${compatible ? 'is-compatible' : ''} ${dimmed ? 'is-dimmed' : ''}`}>
                   <div className="timeline__label">
-                    <span className="timeline__berth">{berth.name}</span>
-                    <span className="badge badge-size">{berth.size}</span>
-                    {(() => {
-                      // Tre stati, distinti dalla FORMA del pallino prima che dal colore:
-                      // disco = occupata, anello = libera, quadrato = in manutenzione.
-                      const state = berth.isUnderMaintenanceNow ? 'maintenance'
-                                  : berth.isOccupiedNow ? 'occupied' : 'free';
-                      const label = state === 'maintenance' ? 'In manutenzione'
-                                  : state === 'occupied' ? 'Occupata' : 'Libera';
-                      return (
-                        <span className={`berth-status is-${state}`}>
-                          <span className="berth-status__dot" aria-hidden="true" />
-                          {label}
-                        </span>
-                      );
-                    })()}
-                    {compatible && (
-                      <button className="btn btn-gold timeline__assign" disabled={assigning}
-                              onClick={() => handleAssign(berth, selectedShip)}>
-                        Assegna →
-                      </button>
-                    )}
+                    <div className="timeline__label-main">
+                      <span className="timeline__berth">{berth.name}</span>
+                      <span className="badge badge-size">{berth.size}</span>
+                    </div>
+                    <div className="timeline__label-sub">
+                      {(() => {
+                        // Tre stati, distinti dalla FORMA del pallino prima che dal colore:
+                        // disco = occupata, anello = libera, quadrato = in manutenzione.
+                        const state = berth.isUnderMaintenanceNow ? 'maintenance'
+                                    : berth.isOccupiedNow ? 'occupied' : 'free';
+                        const label = state === 'maintenance' ? 'In manutenzione'
+                                    : state === 'occupied' ? 'Occupata' : 'Libera';
+                        return (
+                          <span className={`berth-status is-${state}`}>
+                            <span className="berth-status__dot" aria-hidden="true" />
+                            {label}
+                          </span>
+                        );
+                      })()}
+                      {compatible && (
+                        <button className="btn btn-gold btn-sm timeline__assign" disabled={assigning}
+                                onClick={() => handleAssign(berth, selectedShip)}>
+                          Assegna →
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   {/* Celle di sfondo, una per giorno */}

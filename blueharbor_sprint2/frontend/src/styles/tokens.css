@@ -60,9 +60,9 @@
   --surface:    #122036;
   --surface-2:  #182A46;
   --text:       var(--grey-100);
-  --text-muted: var(--grey-400);
-  --border:     #24385C;
-  --occupation: #3A6BC0; /* 3.2:1 su --surface, 5.1:1 col testo bianco */
+  --text-muted: #A3AEC9;   /* più chiaro del grey-400: testo attenuato leggibile su fondo scuro */
+  --border:     #2C4470;   /* bordo un filo più definito */
+  --occupation: #4C7ACB; /* più contrasto su --surface e col testo bianco */
   --maintenance:     #7E8CB4;
   --maintenance-alt: #63709A;
   --shadow-sm:  0 1px 4px rgba(0, 0, 0, 0.40);
@@ -75,9 +75,9 @@
     --surface:    #122036;
     --surface-2:  #182A46;
     --text:       var(--grey-100);
-    --text-muted: var(--grey-400);
-    --border:     #24385C;
-    --occupation: #3A6BC0;
+    --text-muted: #A3AEC9;
+    --border:     #2C4470;
+    --occupation: #4C7ACB;
     --maintenance:     #7E8CB4;
     --maintenance-alt: #63709A;
     --shadow-sm:  0 1px 4px rgba(0, 0, 0, 0.40);
