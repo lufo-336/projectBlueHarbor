@@ -203,6 +203,52 @@ public class ShipsController : ControllerBase
     }
 
     // ==========================================================================
+    //  PUT /api/ships/{id} — modifica i metadati (nome, note) di una nave.
+    //  Rientra nella responsabilità dell'Operatore ("mantiene le informazioni e
+    //  lo stato delle navi"): non tocca taglia/arrivo/durata né l'assegnazione.
+    // ==========================================================================
+    [HttpPut("{id:int}")]
+    [Authorize(Roles = "Operator,Admin")]
+    public async Task<IActionResult> UpdateShip(int id, [FromBody] UpdateShipRequest request)
+    {
+        var ship = await _context.Ships.FindAsync(id);
+        if (ship is null)
+        {
+            return Problem(
+                detail: $"Nave con id {id} non trovata.",
+                statusCode: StatusCodes.Status404NotFound);
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Name))
+        {
+            return Problem(
+                detail: "Il nome della nave non può essere vuoto.",
+                statusCode: StatusCodes.Status400BadRequest);
+        }
+
+        var notes = string.IsNullOrWhiteSpace(request.Notes) ? null : request.Notes.Trim();
+        if (notes is { Length: > 2000 })
+        {
+            return Problem(
+                detail: "La nota non può superare i 2000 caratteri.",
+                statusCode: StatusCodes.Status400BadRequest);
+        }
+
+        ship.Name = request.Name.Trim();
+        ship.Notes = notes;
+        await _context.SaveChangesAsync();
+
+        string? berthName = null;
+        if (ship.BerthId is not null)
+        {
+            var b = await _context.Berths.FindAsync(ship.BerthId);
+            berthName = b?.Name;
+        }
+        return Ok(new ShipDto(ship.Id, ship.Name, ship.Size, ship.ArrivalDay, ship.Duration,
+            ship.Status.ToString(), ship.BerthId, ship.OccupationStartDay, ship.Notes, berthName));
+    }
+
+    // ==========================================================================
     //  POST /api/ships/{id}/assign — assegna una nave a una banchina (ruolo Scheduler)
     // ==========================================================================
     /// <summary>
@@ -310,5 +356,62 @@ public class ShipsController : ControllerBase
         // --- 8) Rispondo con una DTO (non l'entità, per evitare i cicli di navigazione EF -> 500) ---
         return Ok(new AssignShipResponse(
             ship.Id, ship.Name, ship.Size, berth.Id, startDay, ship.Status));
+    }
+
+    // ==========================================================================
+    //  POST /api/ships/{id}/unassign — annulla un'assegnazione PRIMA che
+    //  l'occupazione inizi: la nave torna Pending e si può riassegnare.
+    //  Deviazione consapevole dalla consegna (che vieta modifiche dopo
+    //  l'assegnazione), limitata al caso "correzione prima dell'effetto".
+    // ==========================================================================
+    [HttpPost("{id:int}/unassign")]
+    [Authorize(Roles = "Scheduler,Admin")]
+    public async Task<IActionResult> UnassignShip(int id)
+    {
+        var ship = await _context.Ships.FindAsync(id);
+        if (ship is null)
+        {
+            return Problem(
+                detail: $"Nave con id {id} non trovata.",
+                statusCode: StatusCodes.Status404NotFound);
+        }
+
+        if (ship.Status != ShipStatus.Assigned)
+        {
+            return Problem(
+                detail: $"Solo una nave assegnata può essere annullata (stato attuale: {ship.Status}).",
+                statusCode: StatusCodes.Status409Conflict);
+        }
+
+        var setting = await _context.Settings.FirstOrDefaultAsync(s => s.Key == "CurrentVirtualDay");
+        if (setting is null || !int.TryParse(setting.Value, out var currentDay))
+        {
+            return Problem(
+                detail: "CurrentVirtualDay non è configurato correttamente nel database.",
+                statusCode: StatusCodes.Status500InternalServerError);
+        }
+
+        // Consentito solo finché l'occupazione NON è ancora iniziata.
+        if (ship.OccupationStartDay is int start && currentDay >= start)
+        {
+            return Problem(
+                detail: "L'occupazione è già iniziata: l'assegnazione non è più annullabile.",
+                statusCode: StatusCodes.Status409Conflict);
+        }
+
+        // Torna Pending e rimuove la voce di storico 'Assigned' della assegnazione
+        // annullata (come se non fosse mai avvenuta).
+        ship.Status = ShipStatus.Pending;
+        ship.BerthId = null;
+        ship.OccupationStartDay = null;
+
+        var assignedRows = await _context.AssignmentHistory
+            .Where(h => h.ShipId == id && h.EventType == HistoryEventType.Assigned)
+            .ToListAsync();
+        _context.AssignmentHistory.RemoveRange(assignedRows);
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new { ship.Id, ship.Name, Status = ship.Status.ToString() });
     }
 }

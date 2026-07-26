@@ -36,6 +36,7 @@ export default function SchedulerView() {
   const [dashboard, setDashboard] = useState(null); // null = primo caricamento
   const [selectedShipId, setSelectedShipId] = useState(null);
   const [assigning, setAssigning] = useState(false);
+  const [unassigningId, setUnassigningId] = useState(null); // nave in fase di annullo assegnazione
   const [history, setHistory] = useState(null); // storico assegnazioni (sola lettura)
   const [eventFilter, setEventFilter] = useState('');
   const [exporting, setExporting] = useState(false);
@@ -144,6 +145,22 @@ export default function SchedulerView() {
     }
   }
 
+  // Annulla un'assegnazione finché l'occupazione non è iniziata (torna Pending).
+  async function handleUnassign(a) {
+    if (!window.confirm(`Annullare l'assegnazione di "${a.shipName}"? La nave tornerà in attesa.`)) return;
+    setUnassigningId(a.shipId);
+    try {
+      await api.unassignShip(a.shipId);
+      showSuccess(`Assegnazione di "${a.shipName}" annullata: la nave torna in attesa.`);
+      setSelectedShipId(null);
+      await Promise.all([loadDashboard(), loadHistory()]);
+    } catch (err) {
+      showError(err.message);
+    } finally {
+      setUnassigningId(null);
+    }
+  }
+
   // Esporta lo storico (con i filtri attivi) come CSV scaricabile.
   async function handleExport() {
     setExporting(true);
@@ -170,6 +187,12 @@ export default function SchedulerView() {
   const windowStart = dashboard.currentDay + horizonOffset;
   const days = Array.from({ length: TIMELINE_DAYS }, (_, i) => windowStart + i);
   const selectedShip = dashboard.pendingShips.find((s) => s.id === selectedShipId) ?? null;
+  // Assegnazioni la cui occupazione non è ancora iniziata: sono annullabili.
+  const upcomingAssignments = dashboard.berths
+    .flatMap((b) => b.assignments
+      .filter((a) => a.startDay > dashboard.currentDay)
+      .map((a) => ({ ...a, berthName: b.name })))
+    .sort((x, y) => x.startDay - y.startDay);
 
   return (
     <div className="scheduler">
@@ -202,6 +225,28 @@ export default function SchedulerView() {
               ↦ vai all'arrivo ({fmtDay(selectedShip.arrivalDay)})
             </button>
           </p>
+        )}
+
+        {upcomingAssignments.length > 0 && (
+          <div className="scheduler__upcoming">
+            <h3>Assegnazioni programmate</h3>
+            <p className="scheduler__hint">Annullabili finché l'occupazione non è iniziata.</p>
+            <ul className="pending-list">
+              {upcomingAssignments.map((a) => (
+                <li key={a.shipId} className="upcoming-item">
+                  <span className="upcoming-item__info">
+                    <span className="pending-ship__name">{a.shipName}</span>
+                    <span className="upcoming-item__meta mono">{a.berthName} · dal {fmtDay(a.startDay)}</span>
+                  </span>
+                  <button type="button" className="btn btn-danger btn-sm"
+                          disabled={unassigningId === a.shipId}
+                          onClick={() => handleUnassign(a)}>
+                    {unassigningId === a.shipId ? 'Annullo…' : 'Annulla'}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
       </aside>
 

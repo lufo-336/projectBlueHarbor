@@ -57,6 +57,12 @@
 
 /* Il nome è il dato-chiave della riga: più forte del resto. */
 .operator__name-cell { font-weight: 700; color: var(--text); }
+.operator__row-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+
+/* Form di modifica dentro il modale. */
+.operator__edit-form { display: flex; flex-direction: column; gap: 0.9rem; }
+.operator__edit-notes { resize: vertical; min-height: 96px; }
+.operator__edit-actions { display: flex; justify-content: flex-end; gap: 0.6rem; }
 .operator__search input { min-width: 160px; }
 
 /* Evidenziazione transitoria della nave appena creata. */

@@ -121,11 +121,14 @@ export const api = {
     return request(query ? `/api/ships?${query}` : '/api/ships');
   },
   createShip: (name, notes) => request('/api/ships', { method: 'POST', body: { name, notes } }),
+  updateShip: (shipId, name, notes) => request(`/api/ships/${shipId}`, { method: 'PUT', body: { name, notes } }),
   cancelShip: (shipId) => request(`/api/ships/${shipId}`, { method: 'DELETE' }),
 
   // --- Scheduler ---
   getSchedulerDashboard: () => request('/api/scheduler/dashboard'),
   assignShip: (shipId, berthId) => request(`/api/ships/${shipId}/assign`, { method: 'POST', body: { berthId } }),
+  // Annulla un'assegnazione prima che l'occupazione inizi (nave -> Pending).
+  unassignShip: (shipId) => request(`/api/ships/${shipId}/unassign`, { method: 'POST' }),
 
   // --- Storico assegnazioni (sola lettura) ---
   // params opzionali: { shipId, berthId, eventType }.

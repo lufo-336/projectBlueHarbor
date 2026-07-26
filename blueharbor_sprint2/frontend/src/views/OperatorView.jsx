@@ -6,6 +6,7 @@ import { useToast } from '../context/ToastContext.jsx';
 import { formatDuration } from '../services/time.js';
 import { randomShipName } from '../services/shipNames.js';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
+import Modal from '../components/Modal.jsx';
 import './OperatorView.css';
 
 const STATUS_LABELS = { Pending: 'In attesa', Assigned: 'Assegnata', Departed: 'Partita' };
@@ -21,6 +22,10 @@ export default function OperatorView() {
   const [submitting, setSubmitting] = useState(false);
   const [cancellingId, setCancellingId] = useState(null); // id della nave in fase di annullamento
   const [highlightId, setHighlightId] = useState(null); // nave appena creata, evidenziata
+  const [editing, setEditing] = useState(null); // nave in modifica (o null)
+  const [editName, setEditName] = useState('');
+  const [editNotes, setEditNotes] = useState('');
+  const [savingEdit, setSavingEdit] = useState(false);
 
   // Filtri, ricerca e paginazione (guidano la query verso il backend).
   const [statusFilter, setStatusFilter] = useState('');
@@ -112,6 +117,30 @@ export default function OperatorView() {
       showError(err.message);
     } finally {
       setCancellingId(null);
+    }
+  }
+
+  // Modifica dei metadati (nome, note): responsabilità dell'Operatore.
+  function openEdit(ship) {
+    setEditing(ship);
+    setEditName(ship.name);
+    setEditNotes(ship.notes || '');
+  }
+
+  async function handleSaveEdit(event) {
+    event.preventDefault();
+    const trimmed = editName.trim();
+    if (!trimmed) return;
+    setSavingEdit(true);
+    try {
+      await api.updateShip(editing.id, trimmed, editNotes.trim() || null);
+      showSuccess(`Nave "${trimmed}" aggiornata.`);
+      setEditing(null);
+      await loadShips();
+    } catch (err) {
+      showError(err.message);
+    } finally {
+      setSavingEdit(false);
     }
   }
 
@@ -225,15 +254,17 @@ export default function OperatorView() {
                       <td>{ship.berthName ?? '—'}</td>
                       <td className="operator__notes" title={ship.notes || ''}>{ship.notes || '—'}</td>
                       <td>
-                        {ship.status === 'Pending' ? (
-                          <button type="button" className="btn btn-danger btn-sm"
-                                  disabled={cancellingId === ship.id}
-                                  onClick={() => handleCancel(ship)}>
-                            {cancellingId === ship.id ? 'Annullo…' : 'Annulla'}
-                          </button>
-                        ) : (
-                          <span className="operator__no-action">—</span>
-                        )}
+                        <div className="operator__row-actions">
+                          <button type="button" className="btn btn-ghost btn-sm"
+                                  onClick={() => openEdit(ship)}>Modifica</button>
+                          {ship.status === 'Pending' && (
+                            <button type="button" className="btn btn-danger btn-sm"
+                                    disabled={cancellingId === ship.id}
+                                    onClick={() => handleCancel(ship)}>
+                              {cancellingId === ship.id ? 'Annullo…' : 'Annulla'}
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -259,6 +290,28 @@ export default function OperatorView() {
           </>
         )}
       </section>
+
+      {editing && (
+        <Modal title="Modifica nave" onClose={() => setEditing(null)}>
+          <form className="operator__edit-form" onSubmit={handleSaveEdit}>
+            <div className="field">
+              <label htmlFor="edit-name">Nome della nave</label>
+              <input id="edit-name" value={editName} onChange={(e) => setEditName(e.target.value)} required />
+            </div>
+            <div className="field">
+              <label htmlFor="edit-notes">Note <span className="field__optional">(facoltative)</span></label>
+              <textarea id="edit-notes" value={editNotes} onChange={(e) => setEditNotes(e.target.value)}
+                        rows={4} maxLength={2000} className="operator__edit-notes" />
+            </div>
+            <div className="operator__edit-actions">
+              <button type="button" className="btn btn-ghost" onClick={() => setEditing(null)}>Annulla</button>
+              <button type="submit" className="btn btn-primary" disabled={savingEdit || !editName.trim()}>
+                {savingEdit ? 'Salvo…' : 'Salva'}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </div>
   );
 }
