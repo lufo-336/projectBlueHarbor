@@ -41,6 +41,10 @@ export default function SchedulerView() {
   const [editingAssignment, setEditingAssignment] = useState(null); // assegnazione in modifica
   const [assignForm, setAssignForm] = useState({ berthId: '', name: '', notes: '' });
   const [savingAssign, setSavingAssign] = useState(false);
+  const [tip, setTip] = useState(null); // tooltip timeline (compare con delay)
+  const [flashShipId, setFlashShipId] = useState(null); // nave evidenziata dopo il salto
+  const tipTimer = useRef(null);
+  const flashTimer = useRef(null);
   const [history, setHistory] = useState(null); // storico assegnazioni (sola lettura)
   const [eventFilter, setEventFilter] = useState('');
   const [exporting, setExporting] = useState(false);
@@ -189,6 +193,22 @@ export default function SchedulerView() {
     }
   }
 
+  // Tooltip ricco sulla timeline: compare dopo un breve delay di hover.
+  function showTipFor(event, content) {
+    clearTimeout(tipTimer.current);
+    const r = event.currentTarget.getBoundingClientRect();
+    const anchor = { x: r.left + r.width / 2, y: r.bottom + 6 };
+    tipTimer.current = setTimeout(() => setTip({ ...anchor, ...content }), 550);
+  }
+  function hideTip() { clearTimeout(tipTimer.current); setTip(null); }
+
+  // Evidenzia (lampeggio) una nave dopo che la timeline ci è saltata sopra.
+  function flashShip(shipId) {
+    setFlashShipId(shipId);
+    clearTimeout(flashTimer.current);
+    flashTimer.current = setTimeout(() => setFlashShipId(null), 1300);
+  }
+
   // Esporta lo storico (con i filtri attivi) come CSV scaricabile.
   async function handleExport() {
     setExporting(true);
@@ -220,6 +240,7 @@ export default function SchedulerView() {
     const start = Math.max(dashboard.currentDay, day - 1);
     setHorizonOffset(Math.min(Math.max(0, start - dashboard.currentDay), maxOffset));
   };
+  const jumpAndFlash = (day, shipId) => { jumpToDay(day); flashShip(shipId); };
   // Assegnazioni non ancora iniziate: modificabili. Ordine = ultima assegnata
   // per prima (AssignSeq desc), non per data.
   const upcomingAssignments = dashboard.berths
@@ -235,11 +256,11 @@ export default function SchedulerView() {
       <aside className="card scheduler__pending">
         <h2>Navi in attesa</h2>
         {dashboard.pendingShips.length === 0 ? (
-          <p className="scheduler__hint">Nessuna nave in attesa. L'Operatore può registrarne di nuove.</p>
+          <p className="scheduler__hint scheduler__empty">Nessuna nave in attesa.<br />L'Operatore può registrarne di nuove.</p>
         ) : (
-          <ul className="pending-list">
+          <ul className="pending-list scheduler__pending-list">
             {dashboard.pendingShips.map((ship) => (
-              <li key={ship.id} className="pending-li">
+              <li key={ship.id}>
                 <button
                   className={`pending-ship ${ship.id === selectedShipId ? 'is-selected' : ''}`}
                   onClick={() => selectShip(ship)}
@@ -248,13 +269,6 @@ export default function SchedulerView() {
                   <span className="badge badge-size">{ship.size}</span>
                   <span className="pending-ship__meta mono">arr. {fmtDay(ship.arrivalDay)} · {formatDuration(ship.duration)}</span>
                 </button>
-                <div className="hovercard" role="tooltip">
-                  <strong>{ship.name}</strong>
-                  <span className="hovercard__row">Taglia <b>{ship.size}</b></span>
-                  <span className="hovercard__row">Arrivo <b>{fmtDay(ship.arrivalDay)}</b></span>
-                  <span className="hovercard__row">Durata <b>{formatDuration(ship.duration)}</b></span>
-                  {ship.notes && <span className="hovercard__notes">{ship.notes}</span>}
-                </div>
               </li>
             ))}
           </ul>
@@ -277,7 +291,7 @@ export default function SchedulerView() {
               {upcomingAssignments.map((a) => (
                 <li key={a.shipId} className="upcoming-item">
                   <button type="button" className="upcoming-item__info"
-                          onClick={() => jumpToDay(a.startDay)} title="Mostra nella timeline">
+                          onClick={() => jumpAndFlash(a.startDay, a.shipId)} title="Mostra nella timeline">
                     <span className="pending-ship__name">{a.shipName}</span>
                     <span className="upcoming-item__meta mono">{a.berthName} · dal {fmtDay(a.startDay)}</span>
                   </button>
@@ -390,10 +404,21 @@ export default function SchedulerView() {
                     const end = Math.min(a.endDay, windowStart + TIMELINE_DAYS);
                     if (end <= start) return null; // fuori dalla finestra visibile
                     return (
-                      <div key={a.shipId} className="timeline__block"
+                      <div key={a.shipId}
+                           className={`timeline__block ${a.shipId === flashShipId ? 'is-flash' : ''}`}
                            style={{ gridColumn: `${start - windowStart + 2} / ${end - windowStart + 2}` }}
-                           title={`${a.shipName}: ${fmtDay(a.startDay)}–${fmtDay(a.endDay - 1)}`}
-                           aria-label={`${berth.name} occupata da ${a.shipName}, ${fmtDay(a.startDay)}–${fmtDay(a.endDay - 1)}`}>
+                           aria-label={`${berth.name} occupata da ${a.shipName}, ${fmtDay(a.startDay)}–${fmtDay(a.endDay - 1)}`}
+                           onMouseEnter={(e) => showTipFor(e, {
+                             title: a.shipName,
+                             rows: [
+                               ['Taglia', a.size],
+                               ['Banchina', berth.name],
+                               ['Occupazione', `${fmtDay(a.startDay)}–${fmtDay(a.endDay - 1)}`],
+                               ['Durata', formatDuration(a.endDay - a.startDay)],
+                             ],
+                             notes: a.notes,
+                           })}
+                           onMouseLeave={hideTip}>
                         {a.shipName}
                       </div>
                     );
@@ -482,7 +507,7 @@ export default function SchedulerView() {
                     </td>
                     <td>
                       <button type="button" className="linklike"
-                              onClick={() => jumpToDay(h.occupationStartDay)}
+                              onClick={() => jumpAndFlash(h.occupationStartDay, h.shipId)}
                               title="Mostra nella timeline">{h.shipName}</button>
                     </td>
                     <td><span className="badge badge-size">{h.size}</span></td>
@@ -502,6 +527,16 @@ export default function SchedulerView() {
           </div>
         )}
       </section>
+
+      {tip && (
+        <div className="tl-tip" role="tooltip" style={{ left: `${tip.x}px`, top: `${tip.y}px` }}>
+          <strong>{tip.title}</strong>
+          {tip.rows.map(([k, v]) => (
+            <span key={k} className="tl-tip__row">{k} <b>{v}</b></span>
+          ))}
+          {tip.notes && <span className="tl-tip__notes">{tip.notes}</span>}
+        </div>
+      )}
 
       {editingAssignment && (
         <Modal title="Modifica assegnazione" onClose={() => setEditingAssignment(null)}>

@@ -86,6 +86,8 @@
   border: 1px solid var(--border); border-radius: var(--radius-md);
   padding: 0.6rem 0.8rem;
 }
+.pending-ship { transition: border-color 120ms ease, background 120ms ease; }
+.pending-ship:hover { border-color: var(--sahara-border); background: var(--surface); }
 .pending-ship.is-selected {
   border-color: var(--sahara);
   outline: 2px solid var(--sahara); outline-offset: -1px;
@@ -111,20 +113,29 @@
 .upcoming-item__info:hover .pending-ship__name { text-decoration: underline; }
 .upcoming-item__meta { color: var(--text-muted); font-size: 0.8rem; }
 
-/* --- Tooltip ricco in hover sulle navi in attesa --- */
-.pending-li { position: relative; }
-.hovercard {
-  position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 6;
-  display: none; flex-direction: column; gap: 0.15rem;
+/* --- Colonna sinistra ad altezza costante (desktop): la lista navi in attesa
+       scorre invece di spingere in basso il resto della pagina. --- */
+@media (min-width: 981px) {
+  .scheduler__pending { display: flex; flex-direction: column; min-height: 0; height: 620px; }
+  .scheduler__pending-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding-right: 2px; }
+  .scheduler__empty { flex: 1 1 auto; display: grid; place-items: center; text-align: center; margin: 0; }
+}
+
+/* --- Tooltip ricco sulla timeline (compare dopo un breve delay di hover) --- */
+.tl-tip {
+  position: fixed; z-index: 40; transform: translateX(-50%);
+  pointer-events: none; max-width: 240px;
+  display: flex; flex-direction: column; gap: 0.15rem;
   background: var(--surface); color: var(--text);
   border: 1px solid var(--border); border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md); padding: 0.6rem 0.75rem; font-size: 0.82rem;
+  box-shadow: var(--shadow-md); padding: 0.55rem 0.7rem; font-size: 0.82rem;
+  animation: tl-tip-in 120ms ease-out;
 }
-.pending-li:hover .hovercard, .pending-li:focus-within .hovercard { display: flex; }
-.hovercard strong { font-size: 0.9rem; }
-.hovercard__row { color: var(--text-muted); }
-.hovercard__row b { color: var(--text); font-weight: 600; }
-.hovercard__notes {
+@keyframes tl-tip-in { from { opacity: 0; } to { opacity: 1; } }
+.tl-tip strong { font-size: 0.9rem; }
+.tl-tip__row { color: var(--text-muted); }
+.tl-tip__row b { color: var(--text); font-weight: 600; }
+.tl-tip__notes {
   margin-top: 0.3rem; padding-top: 0.3rem; border-top: 1px solid var(--border);
   color: var(--text); white-space: pre-wrap;
 }
@@ -204,4 +215,15 @@
   background: repeating-linear-gradient(135deg,
     var(--maintenance) 0 5px, var(--maintenance-alt) 5px 10px);
   color: #fff;
+}
+
+/* Hover: leggero risalto (segnala che al passaggio compare il tooltip). */
+.timeline__block { transition: filter 120ms ease; }
+.timeline__block:hover { filter: brightness(1.12); }
+/* Feedback: lampeggio della nave dopo che la timeline ci è "saltata" sopra. */
+.timeline__block.is-flash { animation: block-flash 0.65s ease-out 2; z-index: 2; }
+@keyframes block-flash {
+  0%   { box-shadow: 0 0 0 0 rgba(200, 164, 90, 0.9); }
+  70%  { box-shadow: 0 0 0 8px rgba(200, 164, 90, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(200, 164, 90, 0); }
 }

@@ -21,6 +21,21 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* --- Scrollbar tema-aware: niente barra bianca fuori tema al buio --- */
+* { scrollbar-width: thin; scrollbar-color: var(--grey-400) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--grey-400); border-radius: 999px;
+  border: 2px solid transparent; background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* --- Accessibilità: anello di focus visibile da tastiera su ogni interattivo --- */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--sahara); outline-offset: 2px;
+}
+
 h1, h2 { margin-top: 0; }
 
 .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
@@ -66,6 +81,9 @@ select {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none' stroke='%238A97B5' stroke-width='2'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
   background-repeat: no-repeat; background-position: right 0.6rem center; background-size: 0.8rem;
 }
+/* La lista a tendina delle option deve seguire il tema (altrimenti al buio
+   il testo resta nero su fondo scuro e non si legge). */
+select option { background-color: var(--surface); color: var(--text); }
 
 /* Variante inline (etichetta + controllo su una riga), usata nei filtri. */
 .field--inline {
