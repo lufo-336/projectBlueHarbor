@@ -1,25 +1,38 @@
 .topbar {
   background: var(--cobalt); color: var(--grey-100);
-  display: flex; align-items: center; justify-content: space-between; gap: 1rem 1.5rem;
-  padding: 0.7rem 1.5rem; flex-wrap: wrap;
-}
-.topbar__brand {
-  display: flex; align-items: center; gap: 0.6rem;
-  font-weight: 700; letter-spacing: 0.04em;
+  display: flex; align-items: center; justify-content: space-between; gap: 0.9rem 1.25rem;
+  padding: 0.6rem 1.5rem; flex-wrap: wrap;
 }
 
-/* --- Orologio virtuale + Next Day --- */
-.topbar__clock { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
-.topbar__day {
-  color: var(--sahara-light); letter-spacing: 0.12em; font-weight: 700;
-  display: inline-flex; align-items: baseline; gap: 0.5rem;
+/* --- Brand: logo SVG + wordmark su due righe --- */
+.topbar__brand { display: flex; align-items: center; gap: 0.65rem; }
+.topbar__logo { display: inline-flex; line-height: 0; }
+.topbar__wordmark { display: flex; flex-direction: column; line-height: 1.05; }
+.topbar__name { font-weight: 800; letter-spacing: 0.01em; color: #fff; font-size: 1.05rem; }
+.topbar__sub {
+  font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.24em;
+  color: var(--sahara-light);
 }
-.topbar__day-alt { color: var(--grey-400); font-weight: 400; letter-spacing: 0.02em; }
 
-/* --- Gruppo destro: toggle + identità + logout --- */
+/* --- Gruppo destro: giorno, strumenti, identità --- */
 .topbar__right { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
 
-/* Segmented control (formato tempo). */
+/* Giorno virtuale + Next Day in un'unica pillola. */
+.topbar__daybox {
+  display: inline-flex; align-items: center; gap: 0.7rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px; padding: 0.2rem 0.25rem 0.2rem 0.95rem;
+}
+.topbar__day {
+  color: var(--sahara-light); letter-spacing: 0.1em; font-weight: 700;
+  font-size: 0.88rem; white-space: nowrap;
+}
+.topbar__next { border-radius: 999px; padding: 0.35rem 0.9rem; font-size: 0.85rem; white-space: nowrap; }
+
+/* Strumenti: formato tempo + tema. */
+.topbar__tools { display: inline-flex; align-items: center; gap: 0.6rem; }
+
 .seg {
   display: inline-flex; padding: 2px; gap: 2px;
   background: rgba(255, 255, 255, 0.06);
@@ -29,11 +42,11 @@
   font: inherit; font-size: 0.78rem; font-weight: 600; cursor: pointer;
   border: 0; border-radius: 999px; padding: 0.2rem 0.7rem;
   background: transparent; color: var(--grey-400);
+  transition: color 120ms ease, background 120ms ease;
 }
 .seg button.is-active { background: var(--sahara); color: var(--cobalt); }
 .seg button:not(.is-active):hover { color: var(--grey-100); }
 
-/* Bottone icona (tema). */
 .topbar__icon-btn {
   font: inherit; cursor: pointer; line-height: 1;
   width: 2rem; height: 2rem; display: inline-flex; align-items: center; justify-content: center;
@@ -42,15 +55,14 @@
   border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 999px;
   transition: background 120ms ease;
 }
-.topbar__icon-btn:hover { background: rgba(255, 255, 255, 0.14); }
+.topbar__icon-btn:hover { background: rgba(255, 255, 255, 0.16); }
 
-/* Identità: avatar + (nome sopra, ruolo sotto). Due fatti distinti, non ridondanti. */
-.topbar__identity { display: flex; align-items: center; gap: 0.5rem; }
+/* Identità: avatar + ruolo (italiano) + logout. */
+.topbar__identity { display: inline-flex; align-items: center; gap: 0.55rem; }
 .topbar__avatar {
   width: 2rem; height: 2rem; flex: none; border-radius: 50%;
   display: inline-flex; align-items: center; justify-content: center;
   background: var(--sahara); color: var(--cobalt); font-weight: 700; font-size: 0.9rem;
 }
-/* Solo il ruolo, in italiano (l'email resta nel tooltip dell'identità). */
 .topbar__role-single { font-size: 0.9rem; font-weight: 600; color: var(--sahara-light); }
-.topbar__logout { color: var(--grey-100); }
+.topbar__logout { color: var(--grey-100); margin-left: 0.15rem; }

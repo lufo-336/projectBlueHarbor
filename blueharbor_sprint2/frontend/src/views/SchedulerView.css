@@ -116,8 +116,12 @@
 /* --- Colonna sinistra ad altezza costante (desktop): la lista navi in attesa
        scorre invece di spingere in basso il resto della pagina. --- */
 @media (min-width: 981px) {
-  .scheduler__pending { display: flex; flex-direction: column; min-height: 0; height: 620px; }
-  .scheduler__pending-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding-right: 2px; }
+  /* La colonna sinistra si allunga fino all'altezza della timeline: la lista
+     navi in attesa prende tutto lo spazio disponibile (e scorre se serve),
+     le assegnazioni programmate restano in basso. */
+  .scheduler { align-items: stretch; }
+  .scheduler__pending { display: flex; flex-direction: column; min-height: 0; }
+  .scheduler__pending-list { flex: 1 1 auto; min-height: 80px; overflow-y: auto; padding-right: 2px; }
   .scheduler__empty { flex: 1 1 auto; display: grid; place-items: center; text-align: center; margin: 0; }
 }
 

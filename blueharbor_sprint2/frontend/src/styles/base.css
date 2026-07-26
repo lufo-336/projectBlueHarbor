@@ -11,12 +11,12 @@ body {
      Tinte da --sea-1/--sea-2 (tema-aware); le onde restano leggere per non
      disturbare la lettura di tabelle e timeline dentro le card. */
   background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 190' preserveAspectRatio='none'%3E%3Cpath fill='%234A90C2' fill-opacity='0.26' d='M0,110 C240,185 480,35 720,92 C960,150 1200,50 1440,112 L1440,190 L0,190 Z'/%3E%3Cpath fill='%234A90C2' fill-opacity='0.16' d='M0,140 C240,88 480,180 720,134 C960,88 1200,168 1440,128 L1440,190 L0,190 Z'/%3E%3C/svg%3E"),
-    radial-gradient(1100px 420px at 50% 0%, rgba(74, 144, 194, 0.20), transparent 70%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 240' preserveAspectRatio='none'%3E%3Cpath fill='%234A90C2' fill-opacity='0.30' d='M0,140 C240,220 480,50 720,120 C960,190 1200,60 1440,140 L1440,240 L0,240 Z'/%3E%3Cpath fill='%234A90C2' fill-opacity='0.20' d='M0,175 C240,110 480,225 720,165 C960,105 1200,215 1440,160 L1440,240 L0,240 Z'/%3E%3Cpath fill='%235AA6D8' fill-opacity='0.14' d='M0,205 C240,165 480,235 720,200 C960,165 1200,230 1440,195 L1440,240 L0,240 Z'/%3E%3C/svg%3E"),
+    radial-gradient(1200px 460px at 50% 0%, rgba(74, 144, 194, 0.26), transparent 72%),
     linear-gradient(180deg, var(--sea-1), var(--sea-2));
   background-repeat: no-repeat, no-repeat, no-repeat;
   background-position: bottom center, top center, center;
-  background-size: 100% 190px, 100% 440px, cover;
+  background-size: 100% 240px, 100% 480px, cover;
   background-attachment: fixed, fixed, fixed;
   -webkit-font-smoothing: antialiased;
 }
