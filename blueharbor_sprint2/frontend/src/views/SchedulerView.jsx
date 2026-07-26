@@ -6,6 +6,7 @@ import { useDayLabel } from '../context/PrefsContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import { formatDuration } from '../services/time.js';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
+import Modal from '../components/Modal.jsx';
 import './SchedulerView.css';
 
 // Colonne visibili della timeline: windowStart .. windowStart+13, dove
@@ -37,6 +38,9 @@ export default function SchedulerView() {
   const [selectedShipId, setSelectedShipId] = useState(null);
   const [assigning, setAssigning] = useState(false);
   const [unassigningId, setUnassigningId] = useState(null); // nave in fase di annullo assegnazione
+  const [editingAssignment, setEditingAssignment] = useState(null); // assegnazione in modifica
+  const [assignForm, setAssignForm] = useState({ berthId: '', name: '', notes: '' });
+  const [savingAssign, setSavingAssign] = useState(false);
   const [history, setHistory] = useState(null); // storico assegnazioni (sola lettura)
   const [eventFilter, setEventFilter] = useState('');
   const [exporting, setExporting] = useState(false);
@@ -161,6 +165,30 @@ export default function SchedulerView() {
     }
   }
 
+  // Apre il modale di modifica di un'assegnazione (banchina + nome + note).
+  function openAssignmentEdit(a) {
+    setEditingAssignment(a);
+    setAssignForm({ berthId: String(a.berthId), name: a.shipName, notes: a.notes || '' });
+  }
+
+  async function handleSaveAssignment(event) {
+    event.preventDefault();
+    const name = assignForm.name.trim();
+    if (!name) return;
+    setSavingAssign(true);
+    try {
+      const r = await api.editAssignment(
+        editingAssignment.shipId, Number(assignForm.berthId), name, assignForm.notes.trim() || null);
+      showSuccess(`Assegnazione di "${r.name}" aggiornata: occupazione dal ${fmtDay(r.occupationStartDay)}.`);
+      setEditingAssignment(null);
+      await Promise.all([loadDashboard(), loadHistory()]);
+    } catch (err) {
+      showError(err.message);
+    } finally {
+      setSavingAssign(false);
+    }
+  }
+
   // Esporta lo storico (con i filtri attivi) come CSV scaricabile.
   async function handleExport() {
     setExporting(true);
@@ -187,12 +215,19 @@ export default function SchedulerView() {
   const windowStart = dashboard.currentDay + horizonOffset;
   const days = Array.from({ length: TIMELINE_DAYS }, (_, i) => windowStart + i);
   const selectedShip = dashboard.pendingShips.find((s) => s.id === selectedShipId) ?? null;
-  // Assegnazioni la cui occupazione non è ancora iniziata: sono annullabili.
+  // Sposta la finestra della timeline così che `day` sia visibile (un giorno di contesto prima).
+  const jumpToDay = (day) => {
+    const start = Math.max(dashboard.currentDay, day - 1);
+    setHorizonOffset(Math.min(Math.max(0, start - dashboard.currentDay), maxOffset));
+  };
+  // Assegnazioni non ancora iniziate: modificabili. Ordine = ultima assegnata
+  // per prima (AssignSeq desc), non per data.
   const upcomingAssignments = dashboard.berths
     .flatMap((b) => b.assignments
       .filter((a) => a.startDay > dashboard.currentDay)
-      .map((a) => ({ ...a, berthName: b.name })))
-    .sort((x, y) => x.startDay - y.startDay);
+      .map((a) => ({ ...a, berthId: b.id, berthName: b.name, berthSize: b.size })))
+    .sort((x, y) => y.assignSeq - x.assignSeq);
+  const editableByShip = new Map(upcomingAssignments.map((a) => [a.shipId, a]));
 
   return (
     <div className="scheduler">
@@ -204,7 +239,7 @@ export default function SchedulerView() {
         ) : (
           <ul className="pending-list">
             {dashboard.pendingShips.map((ship) => (
-              <li key={ship.id}>
+              <li key={ship.id} className="pending-li">
                 <button
                   className={`pending-ship ${ship.id === selectedShipId ? 'is-selected' : ''}`}
                   onClick={() => selectShip(ship)}
@@ -213,6 +248,13 @@ export default function SchedulerView() {
                   <span className="badge badge-size">{ship.size}</span>
                   <span className="pending-ship__meta mono">arr. {fmtDay(ship.arrivalDay)} · {formatDuration(ship.duration)}</span>
                 </button>
+                <div className="hovercard" role="tooltip">
+                  <strong>{ship.name}</strong>
+                  <span className="hovercard__row">Taglia <b>{ship.size}</b></span>
+                  <span className="hovercard__row">Arrivo <b>{fmtDay(ship.arrivalDay)}</b></span>
+                  <span className="hovercard__row">Durata <b>{formatDuration(ship.duration)}</b></span>
+                  {ship.notes && <span className="hovercard__notes">{ship.notes}</span>}
+                </div>
               </li>
             ))}
           </ul>
@@ -230,19 +272,17 @@ export default function SchedulerView() {
         {upcomingAssignments.length > 0 && (
           <div className="scheduler__upcoming">
             <h3>Assegnazioni programmate</h3>
-            <p className="scheduler__hint">Annullabili finché l'occupazione non è iniziata.</p>
-            <ul className="pending-list">
+            <p className="scheduler__hint">Modificabili finché l'occupazione non è iniziata.</p>
+            <ul className="pending-list scheduler__upcoming-list">
               {upcomingAssignments.map((a) => (
                 <li key={a.shipId} className="upcoming-item">
-                  <span className="upcoming-item__info">
+                  <button type="button" className="upcoming-item__info"
+                          onClick={() => jumpToDay(a.startDay)} title="Mostra nella timeline">
                     <span className="pending-ship__name">{a.shipName}</span>
                     <span className="upcoming-item__meta mono">{a.berthName} · dal {fmtDay(a.startDay)}</span>
-                  </span>
-                  <button type="button" className="btn btn-danger btn-sm"
-                          disabled={unassigningId === a.shipId}
-                          onClick={() => handleUnassign(a)}>
-                    {unassigningId === a.shipId ? 'Annullo…' : 'Annulla'}
                   </button>
+                  <button type="button" className="btn btn-ghost btn-sm"
+                          onClick={() => openAssignmentEdit(a)}>Modifica</button>
                 </li>
               ))}
             </ul>
@@ -429,7 +469,7 @@ export default function SchedulerView() {
               <thead>
                 <tr>
                   <th>Evento</th><th>Nave</th><th>Taglia</th><th>Banchina</th>
-                  <th>Occupazione</th><th>Registrato il</th>
+                  <th>Occupazione</th><th>Registrato il</th><th>Azioni</th>
                 </tr>
               </thead>
               <tbody>
@@ -440,11 +480,21 @@ export default function SchedulerView() {
                         {EVENT_LABELS[h.eventType]}
                       </span>
                     </td>
-                    <td>{h.shipName}</td>
+                    <td>
+                      <button type="button" className="linklike"
+                              onClick={() => jumpToDay(h.occupationStartDay)}
+                              title="Mostra nella timeline">{h.shipName}</button>
+                    </td>
                     <td><span className="badge badge-size">{h.size}</span></td>
                     <td>{h.berthName}</td>
                     <td className="mono">{fmtDay(h.occupationStartDay)}–{fmtDay(h.occupationEndDay - 1)}</td>
                     <td className="mono">{fmtDay(h.eventDay)}</td>
+                    <td>
+                      {editableByShip.has(h.shipId) ? (
+                        <button type="button" className="btn btn-ghost btn-sm"
+                                onClick={() => openAssignmentEdit(editableByShip.get(h.shipId))}>Modifica</button>
+                      ) : <span className="scheduler__hint">—</span>}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -452,6 +502,44 @@ export default function SchedulerView() {
           </div>
         )}
       </section>
+
+      {editingAssignment && (
+        <Modal title="Modifica assegnazione" onClose={() => setEditingAssignment(null)}>
+          <form className="assign-edit-form" onSubmit={handleSaveAssignment}>
+            <div className="field">
+              <label htmlFor="ae-name">Nome nave</label>
+              <input id="ae-name" value={assignForm.name}
+                     onChange={(e) => setAssignForm((f) => ({ ...f, name: e.target.value }))} required />
+            </div>
+            <div className="field">
+              <label htmlFor="ae-berth">Banchina (taglia {editingAssignment.size})</label>
+              <select id="ae-berth" value={assignForm.berthId}
+                      onChange={(e) => setAssignForm((f) => ({ ...f, berthId: e.target.value }))}>
+                {dashboard.berths.filter((b) => b.size === editingAssignment.size).map((b) => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="field">
+              <label htmlFor="ae-notes">Note <span className="field__optional">(es. perché questa banchina)</span></label>
+              <textarea id="ae-notes" value={assignForm.notes}
+                        onChange={(e) => setAssignForm((f) => ({ ...f, notes: e.target.value }))}
+                        rows={3} maxLength={2000} />
+            </div>
+            <div className="assign-edit-actions">
+              <button type="button" className="btn btn-danger"
+                      onClick={() => { const a = editingAssignment; setEditingAssignment(null); handleUnassign(a); }}>
+                Riporta in attesa
+              </button>
+              <span className="assign-edit-spacer" />
+              <button type="button" className="btn btn-ghost" onClick={() => setEditingAssignment(null)}>Annulla</button>
+              <button type="submit" className="btn btn-primary" disabled={savingAssign || !assignForm.name.trim()}>
+                {savingAssign ? 'Salvo…' : 'Salva'}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </div>
   );
 }

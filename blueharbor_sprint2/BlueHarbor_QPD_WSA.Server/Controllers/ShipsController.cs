@@ -414,4 +414,108 @@ public class ShipsController : ControllerBase
 
         return Ok(new { ship.Id, ship.Name, Status = ship.Status.ToString() });
     }
+
+    // ==========================================================================
+    //  PUT /api/ships/{id}/assignment — modifica un'assegnazione (Scheduler):
+    //  cambia banchina (ricalcolando il primo slot libero), nome e note.
+    //  Consentito SOLO finché l'occupazione non è iniziata. Aggiorna la riga
+    //  di storico 'Assigned' per riflettere la modifica.
+    // ==========================================================================
+    [HttpPut("{id:int}/assignment")]
+    [Authorize(Roles = "Scheduler,Admin")]
+    public async Task<IActionResult> EditAssignment(int id, [FromBody] EditAssignmentRequest request)
+    {
+        var ship = await _context.Ships.FindAsync(id);
+        if (ship is null)
+        {
+            return Problem(detail: $"Nave con id {id} non trovata.",
+                statusCode: StatusCodes.Status404NotFound);
+        }
+
+        if (ship.Status != ShipStatus.Assigned)
+        {
+            return Problem(detail: $"Solo un'assegnazione può essere modificata (stato attuale: {ship.Status}).",
+                statusCode: StatusCodes.Status409Conflict);
+        }
+
+        var setting = await _context.Settings.FirstOrDefaultAsync(s => s.Key == "CurrentVirtualDay");
+        if (setting is null || !int.TryParse(setting.Value, out var currentDay))
+        {
+            return Problem(detail: "CurrentVirtualDay non è configurato correttamente nel database.",
+                statusCode: StatusCodes.Status500InternalServerError);
+        }
+
+        if (ship.OccupationStartDay is int st && currentDay >= st)
+        {
+            return Problem(detail: "L'occupazione è già iniziata: l'assegnazione non è più modificabile.",
+                statusCode: StatusCodes.Status409Conflict);
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Name))
+        {
+            return Problem(detail: "Il nome della nave non può essere vuoto.",
+                statusCode: StatusCodes.Status400BadRequest);
+        }
+        var notes = string.IsNullOrWhiteSpace(request.Notes) ? null : request.Notes.Trim();
+        if (notes is { Length: > 2000 })
+        {
+            return Problem(detail: "La nota non può superare i 2000 caratteri.",
+                statusCode: StatusCodes.Status400BadRequest);
+        }
+
+        var berth = await _context.Berths.FindAsync(request.BerthId);
+        if (berth is null)
+        {
+            return Problem(detail: $"Banchina con id {request.BerthId} non trovata.",
+                statusCode: StatusCodes.Status404NotFound);
+        }
+        if (!SchedulingRules.IsCompatible(ship.Size, berth.Size))
+        {
+            return Problem(detail: $"Nave di dimensione {ship.Size} non compatibile con banchina {berth.Size}.",
+                statusCode: StatusCodes.Status400BadRequest);
+        }
+
+        // Se cambia la banchina, ricalcolo il primo slot libero (escludendo questa
+        // nave). Altrimenti tengo l'occupazione attuale.
+        var startDay = ship.OccupationStartDay!.Value;
+        if (berth.Id != ship.BerthId)
+        {
+            var occupations = await _context.Ships
+                .Where(s => s.BerthId == berth.Id && s.Status == ShipStatus.Assigned && s.Id != ship.Id)
+                .Select(s => new { s.OccupationStartDay, s.Duration })
+                .ToListAsync();
+            var maintenances = await _context.BerthMaintenance
+                .Where(m => m.BerthId == berth.Id)
+                .Select(m => new { m.StartDay, m.EndDay })
+                .ToListAsync();
+            var intervals = occupations
+                .Select(o => (Start: o.OccupationStartDay!.Value, End: o.OccupationStartDay!.Value + o.Duration))
+                .Concat(maintenances.Select(m => (Start: m.StartDay, End: m.EndDay)))
+                .ToList();
+            startDay = SchedulingRules.ComputeOccupationStartDay(ship.ArrivalDay, ship.Duration, currentDay, intervals);
+            ship.BerthId = berth.Id;
+            ship.OccupationStartDay = startDay;
+        }
+
+        ship.Name = request.Name.Trim();
+        ship.Notes = notes;
+
+        // Riallineo la riga di storico 'Assigned' a nome/banchina/occupazione nuovi.
+        var histRow = await _context.AssignmentHistory
+            .Where(h => h.ShipId == id && h.EventType == HistoryEventType.Assigned)
+            .OrderByDescending(h => h.Id)
+            .FirstOrDefaultAsync();
+        if (histRow is not null)
+        {
+            histRow.ShipName = ship.Name;
+            histRow.BerthId = berth.Id;
+            histRow.BerthName = berth.Name;
+            histRow.OccupationStartDay = startDay;
+            histRow.OccupationEndDay = startDay + ship.Duration;
+        }
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new AssignShipResponse(ship.Id, ship.Name, ship.Size, berth.Id, startDay, ship.Status));
+    }
 }

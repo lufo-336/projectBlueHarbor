@@ -101,8 +101,46 @@
   background: var(--surface-2); border: 1px solid var(--border);
   border-radius: var(--radius-md); padding: 0.5rem 0.7rem;
 }
-.upcoming-item__info { display: flex; flex-direction: column; min-width: 0; }
+/* Altezza limitata: la card non supera la timeline e scorre con la rotella. */
+.scheduler__upcoming-list { max-height: 220px; overflow-y: auto; }
+.upcoming-item__info {
+  flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.1rem;
+  background: transparent; border: 0; padding: 0; cursor: pointer;
+  font: inherit; color: inherit; text-align: left;
+}
+.upcoming-item__info:hover .pending-ship__name { text-decoration: underline; }
 .upcoming-item__meta { color: var(--text-muted); font-size: 0.8rem; }
+
+/* --- Tooltip ricco in hover sulle navi in attesa --- */
+.pending-li { position: relative; }
+.hovercard {
+  position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 6;
+  display: none; flex-direction: column; gap: 0.15rem;
+  background: var(--surface); color: var(--text);
+  border: 1px solid var(--border); border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md); padding: 0.6rem 0.75rem; font-size: 0.82rem;
+}
+.pending-li:hover .hovercard, .pending-li:focus-within .hovercard { display: flex; }
+.hovercard strong { font-size: 0.9rem; }
+.hovercard__row { color: var(--text-muted); }
+.hovercard__row b { color: var(--text); font-weight: 600; }
+.hovercard__notes {
+  margin-top: 0.3rem; padding-top: 0.3rem; border-top: 1px solid var(--border);
+  color: var(--text); white-space: pre-wrap;
+}
+
+/* Nome-nave cliccabile (salta nella timeline) nello storico. */
+.linklike {
+  background: transparent; border: 0; padding: 0; cursor: pointer;
+  font: inherit; color: var(--occupation); font-weight: 600; text-align: left;
+}
+.linklike:hover { text-decoration: underline; }
+
+/* --- Modale di modifica assegnazione --- */
+.assign-edit-form { display: flex; flex-direction: column; gap: 0.9rem; }
+.assign-edit-form textarea { resize: vertical; min-height: 72px; }
+.assign-edit-actions { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.assign-edit-spacer { flex: 1; }
 
 /* --- Timeline ---
    NB: repeat(14, ...) deve combaciare con TIMELINE_DAYS in SchedulerView.jsx */

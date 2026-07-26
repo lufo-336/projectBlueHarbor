@@ -129,6 +129,9 @@ export const api = {
   assignShip: (shipId, berthId) => request(`/api/ships/${shipId}/assign`, { method: 'POST', body: { berthId } }),
   // Annulla un'assegnazione prima che l'occupazione inizi (nave -> Pending).
   unassignShip: (shipId) => request(`/api/ships/${shipId}/unassign`, { method: 'POST' }),
+  // Modifica un'assegnazione (banchina + nome + note) prima dell'inizio occupazione.
+  editAssignment: (shipId, berthId, name, notes) =>
+    request(`/api/ships/${shipId}/assignment`, { method: 'PUT', body: { berthId, name, notes } }),
 
   // --- Storico assegnazioni (sola lettura) ---
   // params opzionali: { shipId, berthId, eventType }.
