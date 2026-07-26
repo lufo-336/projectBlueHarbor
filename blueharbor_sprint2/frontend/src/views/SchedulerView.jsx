@@ -1,20 +1,37 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../services/api.js';
 import { computeOccupationStartDay, isCompatible } from '../services/scheduling.js';
 import { useDay } from '../context/DayContext.jsx';
+import { useDayLabel } from '../context/PrefsContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
+import { formatDuration } from '../services/time.js';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import './SchedulerView.css';
 
 // Colonne visibili della timeline: windowStart .. windowStart+13, dove
-// windowStart = currentDay + horizonOffset (navigazione a finestre intere).
+// windowStart = currentDay + horizonOffset.
 // NB: deve combaciare con repeat(14, ...) in SchedulerView.css.
 const TIMELINE_DAYS = 14;
+const WHEEL_STEP = 2; // giorni spostati per "scatto" di rotella
 
 const EVENT_LABELS = { Assigned: 'Assegnata', Departed: 'Partita' };
 
+// Limite fino a cui ha senso muovere la finestra: copre 30 giorni, tutte le
+// occupazioni/manutenzioni note e gli arrivi in attesa.
+function maxHorizonOffset(d) {
+  let end = d.currentDay + 30;
+  for (const b of d.berths) {
+    for (const a of b.assignments) end = Math.max(end, a.endDay);
+    for (const m of b.maintenances) end = Math.max(end, m.endDay);
+  }
+  for (const s of d.pendingShips) end = Math.max(end, s.arrivalDay + s.duration);
+  const maxStart = Math.max(d.currentDay, end - TIMELINE_DAYS + 1);
+  return maxStart - d.currentDay;
+}
+
 export default function SchedulerView() {
   const { currentDay } = useDay();
+  const fmtDay = useDayLabel();
   const { showSuccess, showError } = useToast();
   const [dashboard, setDashboard] = useState(null); // null = primo caricamento
   const [selectedShipId, setSelectedShipId] = useState(null);
@@ -22,8 +39,14 @@ export default function SchedulerView() {
   const [history, setHistory] = useState(null); // storico assegnazioni (sola lettura)
   const [eventFilter, setEventFilter] = useState('');
   const [exporting, setExporting] = useState(false);
-  // Finestra visibile della timeline: multipli di TIMELINE_DAYS oltre "oggi".
+  // Finestra visibile della timeline: scostamento in giorni oltre "oggi".
   const [horizonOffset, setHorizonOffset] = useState(0);
+
+  // Ref-specchio di dashboard e offset: servono al gestore rotella (nativo,
+  // non-passivo) per leggere lo stato aggiornato senza closure stantie.
+  const dashboardRef = useRef(dashboard); dashboardRef.current = dashboard;
+  const offsetRef = useRef(horizonOffset); offsetRef.current = horizonOffset;
+  const timelineRef = useRef(null);
 
   const loadDashboard = useCallback(async () => {
     try {
@@ -47,12 +70,45 @@ export default function SchedulerView() {
   useEffect(() => { loadHistory(); }, [loadHistory, currentDay]);
 
   // Al cambio del giorno reale (Next Day) la finestra torna su "oggi".
-  // Aggiustamento durante il render (pattern React "adjusting state when a
-  // prop changes"): niente effect, niente render a cascata.
   const [lastSeenDay, setLastSeenDay] = useState(currentDay);
   if (lastSeenDay !== currentDay) {
     setLastSeenDay(currentDay);
     setHorizonOffset(0);
+  }
+
+  // Rotella del mouse sulla timeline = spostamento della finestra nel tempo.
+  // Listener nativo non-passivo (React rende onWheel passivo: non potrebbe
+  // chiamare preventDefault). Ai bordi lascia scorrere la pagina.
+  const ready = dashboard !== null;
+  useEffect(() => {
+    const el = timelineRef.current;
+    if (!el) return undefined;
+    function onWheel(e) {
+      if (!e.deltaY) return;
+      const d = dashboardRef.current;
+      if (!d) return;
+      const max = maxHorizonOffset(d);
+      const forward = e.deltaY > 0;
+      const o = offsetRef.current;
+      if ((forward && o >= max) || (!forward && o <= 0)) return; // bordo: scorre la pagina
+      e.preventDefault();
+      const next = Math.min(Math.max(0, o + (forward ? WHEEL_STEP : -WHEEL_STEP)), max);
+      setHorizonOffset(next);
+    }
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [ready]);
+
+  // Porta la finestra sulla finestra d'arrivo di una nave (un giorno di contesto prima).
+  function offsetForArrival(d, ship) {
+    const target = Math.max(d.currentDay, ship.arrivalDay - 1);
+    return Math.min(Math.max(0, target - d.currentDay), maxHorizonOffset(d));
+  }
+
+  function selectShip(ship) {
+    const nextId = ship.id === selectedShipId ? null : ship.id;
+    setSelectedShipId(nextId);
+    if (nextId !== null) setHorizonOffset(offsetForArrival(dashboard, ship));
   }
 
   async function handleAssign(berth, selectedShip) {
@@ -61,7 +117,7 @@ export default function SchedulerView() {
     try {
       const result = await api.assignShip(selectedShip.id, berth.id);
       // Fa fede il giorno calcolato dal SERVER, non l'anteprima client.
-      showSuccess(`${result.name} assegnata a ${berth.name}: occupazione dal giorno ${result.occupationStartDay}.`);
+      showSuccess(`${result.name} assegnata a ${berth.name}: occupazione dal ${fmtDay(result.occupationStartDay)}.`);
       setSelectedShipId(null);
       await Promise.all([loadDashboard(), loadHistory()]);
     } catch (err) {
@@ -93,13 +149,14 @@ export default function SchedulerView() {
 
   if (dashboard === null) return <LoadingSpinner />;
 
+  const maxOffset = maxHorizonOffset(dashboard);
   const windowStart = dashboard.currentDay + horizonOffset;
   const days = Array.from({ length: TIMELINE_DAYS }, (_, i) => windowStart + i);
   const selectedShip = dashboard.pendingShips.find((s) => s.id === selectedShipId) ?? null;
 
   return (
     <div className="scheduler">
-      {/* ---- Pannello sinistro: navi in attesa (flusso Guidato, passo 1) ---- */}
+      {/* ---- Pannello sinistro: navi in attesa (flusso guidato, passo 1) ---- */}
       <aside className="card scheduler__pending">
         <h2>Navi in attesa</h2>
         {dashboard.pendingShips.length === 0 ? (
@@ -110,11 +167,11 @@ export default function SchedulerView() {
               <li key={ship.id}>
                 <button
                   className={`pending-ship ${ship.id === selectedShipId ? 'is-selected' : ''}`}
-                  onClick={() => setSelectedShipId(ship.id === selectedShipId ? null : ship.id)}
+                  onClick={() => selectShip(ship)}
                 >
                   <span className="pending-ship__name">{ship.name}</span>
                   <span className="badge badge-size">{ship.size}</span>
-                  <span className="pending-ship__meta mono">arr. g{ship.arrivalDay} · {ship.duration}gg</span>
+                  <span className="pending-ship__meta mono">arr. {fmtDay(ship.arrivalDay)} · {formatDuration(ship.duration)}</span>
                 </button>
               </li>
             ))}
@@ -123,6 +180,10 @@ export default function SchedulerView() {
         {selectedShip && (
           <p className="scheduler__hint scheduler__hint--active">
             <strong>{selectedShip.name}</strong> selezionata: scegli una banchina evidenziata nella timeline.
+            <button type="button" className="btn btn-ghost btn-sm scheduler__goto"
+                    onClick={() => setHorizonOffset(offsetForArrival(dashboard, selectedShip))}>
+              ↦ vai all'arrivo ({fmtDay(selectedShip.arrivalDay)})
+            </button>
           </p>
         )}
       </aside>
@@ -135,12 +196,17 @@ export default function SchedulerView() {
             <button className="btn btn-sm" disabled={horizonOffset === 0}
                     onClick={() => setHorizonOffset((o) => Math.max(0, o - TIMELINE_DAYS))}
                     aria-label="Finestra precedente">‹</button>
-            <span className="mono">g{windowStart}–g{windowStart + TIMELINE_DAYS - 1}</span>
+            <input type="range" className="timeline-slider"
+                   min={0} max={maxOffset} value={Math.min(horizonOffset, maxOffset)}
+                   disabled={maxOffset === 0}
+                   onChange={(e) => setHorizonOffset(Number(e.target.value))}
+                   aria-label="Sposta la finestra temporale" />
+            <button className="btn btn-sm" disabled={horizonOffset >= maxOffset}
+                    onClick={() => setHorizonOffset((o) => Math.min(maxOffset, o + TIMELINE_DAYS))}
+                    aria-label="Finestra successiva">›</button>
+            <span className="mono timeline-nav__range">{fmtDay(windowStart)}–{fmtDay(windowStart + TIMELINE_DAYS - 1)}</span>
             <button className="btn btn-sm" disabled={horizonOffset === 0}
                     onClick={() => setHorizonOffset(0)}>oggi</button>
-            <button className="btn btn-sm"
-                    onClick={() => setHorizonOffset((o) => o + TIMELINE_DAYS)}
-                    aria-label="Finestra successiva">›</button>
           </div>
           <ul className="timeline-legend">
             <li><span className="lg lg--occupied" aria-hidden="true" />Occupazione</li>
@@ -149,7 +215,7 @@ export default function SchedulerView() {
             <li><span className="lg lg--today" aria-hidden="true" />Oggi</li>
           </ul>
         </div>
-        <div className="timeline-scroll">
+        <div className="timeline-scroll" ref={timelineRef}>
           <div className="timeline">
             {/* Intestazione coi numeri dei giorni */}
             <div className="timeline__row timeline__row--head">
@@ -220,8 +286,8 @@ export default function SchedulerView() {
                     return (
                       <div key={a.shipId} className="timeline__block"
                            style={{ gridColumn: `${start - windowStart + 2} / ${end - windowStart + 2}` }}
-                           title={`${a.shipName}: giorni ${a.startDay}–${a.endDay - 1}`}
-                           aria-label={`${berth.name} occupata da ${a.shipName}, giorni ${a.startDay}–${a.endDay - 1}`}>
+                           title={`${a.shipName}: ${fmtDay(a.startDay)}–${fmtDay(a.endDay - 1)}`}
+                           aria-label={`${berth.name} occupata da ${a.shipName}, ${fmtDay(a.startDay)}–${fmtDay(a.endDay - 1)}`}>
                         {a.shipName}
                       </div>
                     );
@@ -236,8 +302,8 @@ export default function SchedulerView() {
                     return (
                       <div key={`m${m.id}`} className="timeline__block timeline__block--maintenance"
                            style={{ gridColumn: `${start - windowStart + 2} / ${end - windowStart + 2}` }}
-                           title={`Manutenzione: giorni ${m.startDay}–${m.endDay - 1}`}
-                           aria-label={`${berth.name} in manutenzione, giorni ${m.startDay}–${m.endDay - 1}`}>
+                           title={`Manutenzione: ${fmtDay(m.startDay)}–${fmtDay(m.endDay - 1)}`}
+                           aria-label={`${berth.name} in manutenzione, ${fmtDay(m.startDay)}–${fmtDay(m.endDay - 1)}`}>
                         Manutenzione
                       </div>
                     );
@@ -252,8 +318,8 @@ export default function SchedulerView() {
                     return (
                       <div className="timeline__block timeline__block--preview"
                            style={{ gridColumn: `${start - windowStart + 2} / ${end - windowStart + 2}` }}
-                           title={`Anteprima: dal giorno ${previewStart} per ${selectedShip.duration}gg`}>
-                        dal g{previewStart}
+                           title={`Anteprima: dal ${fmtDay(previewStart)} per ${formatDuration(selectedShip.duration)}`}>
+                        dal {fmtDay(previewStart)}
                       </div>
                     );
                   })()}
@@ -297,7 +363,7 @@ export default function SchedulerView() {
               <thead>
                 <tr>
                   <th>Evento</th><th>Nave</th><th>Taglia</th><th>Banchina</th>
-                  <th>Occupazione</th><th>Giorno evento</th><th>Registrato</th>
+                  <th>Occupazione</th><th>Registrato il</th>
                 </tr>
               </thead>
               <tbody>
@@ -311,9 +377,8 @@ export default function SchedulerView() {
                     <td>{h.shipName}</td>
                     <td><span className="badge badge-size">{h.size}</span></td>
                     <td>{h.berthName}</td>
-                    <td className="mono">g{h.occupationStartDay}–g{h.occupationEndDay - 1}</td>
-                    <td className="mono">g{h.eventDay}</td>
-                    <td className="mono">{new Date(h.createdAt).toLocaleString('it-IT')}</td>
+                    <td className="mono">{fmtDay(h.occupationStartDay)}–{fmtDay(h.occupationEndDay - 1)}</td>
+                    <td className="mono">{fmtDay(h.eventDay)}</td>
                   </tr>
                 ))}
               </tbody>
