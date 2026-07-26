@@ -29,6 +29,8 @@
 
   /* Token semantici (sono questi a cambiare nel tema scuro) */
   --bg:         var(--grey-50);
+  --sea-1:      #EEF4FA;   /* gradiente "mare": alto */
+  --sea-2:      #D6E4F2;   /* gradiente "mare": basso */
   --surface:    #FFFFFF;
   --surface-2:  var(--grey-100);
   --text:       var(--grey-800);
@@ -57,6 +59,8 @@
    Lo script no-flash in index.html imposta data-theme prima del primo paint. */
 :root[data-theme="dark"] {
   --bg:         #0B1526;
+  --sea-1:      #0A1526;
+  --sea-2:      #0E2338;
   --surface:    #122036;
   --surface-2:  #182A46;
   --text:       var(--grey-100);
@@ -72,6 +76,8 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
     --bg:         #0B1526;
+    --sea-1:      #0A1526;
+    --sea-2:      #0E2338;
     --surface:    #122036;
     --surface-2:  #182A46;
     --text:       var(--grey-100);

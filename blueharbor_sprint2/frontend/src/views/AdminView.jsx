@@ -4,6 +4,7 @@ import { ROLES, ROLE_LABELS } from '../services/roles.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useDay } from '../context/DayContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
+import { dayToInputValue, inputValueToDay } from '../services/time.js';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import ShipArchive from '../components/ShipArchive.jsx';
 import OperatorView from './OperatorView.jsx';
@@ -200,6 +201,7 @@ function UserManagement() {
 // esistente). Una nave gia' assegnata non si sposta mai: il server rifiuta con 409.
 function MaintenanceManagement() {
   const { showSuccess, showError } = useToast();
+  const { day1Date } = useDay();
   const [data, setData] = useState(null); // { currentDay, berths } — null = primo caricamento
   const [items, setItems] = useState([]);
   const [form, setForm] = useState({ berthId: '', startDay: '', endDay: '' });
@@ -280,19 +282,36 @@ function MaintenanceManagement() {
             </select>
           </div>
           <div className="field">
-            <label htmlFor="m-start">Giorno inizio</label>
-            <input id="m-start" type="number" required min={data.currentDay ?? 0} value={form.startDay}
-                   onChange={(e) => setForm({ ...form, startDay: e.target.value })} />
+            <label htmlFor="m-start">Data inizio</label>
+            <input id="m-start" type="date" required
+                   min={data.currentDay != null ? dayToInputValue(data.currentDay, day1Date) : undefined}
+                   value={form.startDay !== '' ? dayToInputValue(Number(form.startDay), day1Date) : ''}
+                   onChange={(e) => {
+                     const day = inputValueToDay(e.target.value, day1Date);
+                     setForm((f) => ({ ...f, startDay: day ?? '' }));
+                   }} />
           </div>
           <div className="field">
-            <label htmlFor="m-end">Giorno fine (escluso)</label>
-            <input id="m-end" type="number" required min={Number(form.startDay || 0) + 1} value={form.endDay}
-                   onChange={(e) => setForm({ ...form, endDay: e.target.value })} />
+            <label htmlFor="m-end">Data fine (inclusa)</label>
+            <input id="m-end" type="date" required
+                   min={form.startDay !== ''
+                     ? dayToInputValue(Number(form.startDay), day1Date)
+                     : (data.currentDay != null ? dayToInputValue(data.currentDay, day1Date) : undefined)}
+                   value={form.endDay !== '' ? dayToInputValue(Number(form.endDay) - 1, day1Date) : ''}
+                   onChange={(e) => {
+                     const dayIncl = inputValueToDay(e.target.value, day1Date);
+                     setForm((f) => ({ ...f, endDay: dayIncl != null ? dayIncl + 1 : '' }));
+                   }} />
           </div>
           <button type="submit" className="btn btn-primary" disabled={submitting}>
             {submitting ? 'Programmo…' : 'Programma'}
           </button>
         </form>
+        {form.startDay !== '' && form.endDay !== '' && Number(form.endDay) > Number(form.startDay) && (
+          <p className="admin__hint mono">
+            Finestra: g{form.startDay}–g{Number(form.endDay) - 1} ({Number(form.endDay) - Number(form.startDay)} giorni)
+          </p>
+        )}
         {data.currentDay !== null && (
           <p className="admin__hint mono">Giorno corrente: g{data.currentDay}</p>
         )}

@@ -3,9 +3,20 @@
 
 body {
   margin: 0;
+  min-height: 100svh;
   font-family: var(--font);
   color: var(--text);
-  background: var(--bg);
+  background-color: var(--bg);
+  /* Sfondo "mare": gradiente + onde tenui in basso, fisse allo scroll.
+     Tinte da --sea-1/--sea-2 (tema-aware); le onde restano leggere per non
+     disturbare la lettura di tabelle e timeline dentro le card. */
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 140' preserveAspectRatio='none'%3E%3Cpath fill='%234A90C2' fill-opacity='0.14' d='M0,80 C240,140 480,20 720,64 C960,108 1200,36 1440,84 L1440,140 L0,140 Z'/%3E%3Cpath fill='%234A90C2' fill-opacity='0.10' d='M0,104 C240,64 480,132 720,98 C960,64 1200,124 1440,94 L1440,140 L0,140 Z'/%3E%3C/svg%3E"),
+    linear-gradient(180deg, var(--sea-1), var(--sea-2));
+  background-repeat: no-repeat, no-repeat;
+  background-position: bottom center, center;
+  background-size: 100% 140px, cover;
+  background-attachment: fixed, fixed;
   -webkit-font-smoothing: antialiased;
 }
 

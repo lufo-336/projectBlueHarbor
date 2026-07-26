@@ -42,3 +42,18 @@ export function formatDayRange(start, endExclusive, opts = {}) {
 export function formatDuration(days) {
   return days === 1 ? '1 giorno' : `${days} giorni`;
 }
+
+/** Valore "YYYY-MM-DD" per un <input type="date"> a partire dal giorno virtuale. */
+export function dayToInputValue(dayNumber, day1Date) {
+  const d = dayToDate(dayNumber, day1Date);
+  if (!d) return '';
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+/** Giorno virtuale (giorno 1 = day1Date) a partire da un "YYYY-MM-DD". */
+export function inputValueToDay(iso, day1Date) {
+  if (!iso || !day1Date) return null;
+  const ms = new Date(iso + 'T00:00:00').getTime() - new Date(day1Date + 'T00:00:00').getTime();
+  return Math.round(ms / 86400000) + 1;
+}
