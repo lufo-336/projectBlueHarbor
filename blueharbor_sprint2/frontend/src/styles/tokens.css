@@ -51,15 +51,33 @@
   --font-mono: 'Cascadia Mono', Consolas, 'Courier New', monospace;
 }
 
+/* Tema scuro. Le variabili sono le stesse in due contesti:
+   - toggle manuale:  :root[data-theme="dark"]  (vince sempre)
+   - preferenza di sistema, solo se l'utente non ha ancora scelto: :not([data-theme])
+   Lo script no-flash in index.html imposta data-theme prima del primo paint. */
+:root[data-theme="dark"] {
+  --bg:         #0B1526;
+  --surface:    #122036;
+  --surface-2:  #182A46;
+  --text:       var(--grey-100);
+  --text-muted: var(--grey-400);
+  --border:     #24385C;
+  --occupation: #3A6BC0; /* 3.2:1 su --surface, 5.1:1 col testo bianco */
+  --maintenance:     #7E8CB4;
+  --maintenance-alt: #63709A;
+  --shadow-sm:  0 1px 4px rgba(0, 0, 0, 0.40);
+  --shadow-md:  0 4px 20px rgba(0, 0, 0, 0.50);
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme]) {
     --bg:         #0B1526;
     --surface:    #122036;
     --surface-2:  #182A46;
     --text:       var(--grey-100);
     --text-muted: var(--grey-400);
     --border:     #24385C;
-    --occupation: #3A6BC0; /* 3.2:1 su --surface, 5.1:1 col testo bianco */
+    --occupation: #3A6BC0;
     --maintenance:     #7E8CB4;
     --maintenance-alt: #63709A;
     --shadow-sm:  0 1px 4px rgba(0, 0, 0, 0.40);

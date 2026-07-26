@@ -1,14 +1,17 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useDay } from '../context/DayContext.jsx';
+import { usePrefs } from '../context/PrefsContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import { api } from '../services/api.js';
+import { dayToDate } from '../services/time.js';
 import { roleLabel } from '../services/roles.js';
 import './Topbar.css';
 
 export default function Topbar() {
   const { user, logout } = useAuth();
   const { currentDay, setCurrentDay, day1Date } = useDay();
+  const { theme, timeMode, toggleTheme, toggleTimeMode } = usePrefs();
   const { showSuccess, showError } = useToast();
   const [advancing, setAdvancing] = useState(false);
 
@@ -27,27 +30,64 @@ export default function Topbar() {
     }
   }
 
+  // Data calendario derivata dal giorno virtuale (solo proiezione, mai logica).
+  const date = currentDay !== null ? dayToDate(currentDay, day1Date) : null;
+  const dateStr = date && date.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' });
+  const dayStr = currentDay === null ? '—' : String(currentDay).padStart(2, '0');
+  const initial = (user.name || user.email || '?').charAt(0).toUpperCase();
+
   return (
     <header className="topbar">
       <div className="topbar__brand">
         <span aria-hidden="true">⚓</span>
         <span>BlueHarbor Terminal</span>
       </div>
-      <div className="topbar__controls">
+
+      <div className="topbar__clock">
         <span className="topbar__day mono">
-          GIORNO {currentDay === null ? '—' : String(currentDay).padStart(2, '0')}
-          {currentDay !== null && day1Date && (
-            <span className="topbar__date">
-              {new Date(new Date(day1Date + 'T00:00:00').getTime() + (currentDay - 1) * 86400000)
-                .toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}
-            </span>
+          {timeMode === 'date' && dateStr ? (
+            <>
+              {dateStr}
+              <span className="topbar__day-alt">· giorno {currentDay ?? '—'}</span>
+            </>
+          ) : (
+            <>
+              GIORNO {dayStr}
+              {dateStr && <span className="topbar__day-alt">· {dateStr}</span>}
+            </>
           )}
         </span>
         <button className="btn btn-gold" onClick={handleNextDay} disabled={advancing}>
           {advancing ? 'Avanzo…' : 'Next Day →'}
         </button>
-        <span className="topbar__role">{roleLabel(user.role)}</span>
-        <span className="topbar__user">{user.name}</span>
+      </div>
+
+      <div className="topbar__right">
+        {/* Toggle formato tempo: giorno virtuale gN <-> data calendario. */}
+        <div className="seg" role="group" aria-label="Formato del tempo">
+          <button type="button" className={timeMode === 'day' ? 'is-active' : ''}
+                  aria-pressed={timeMode === 'day'}
+                  onClick={() => timeMode !== 'day' && toggleTimeMode()}>Giorno</button>
+          <button type="button" className={timeMode === 'date' ? 'is-active' : ''}
+                  aria-pressed={timeMode === 'date'}
+                  onClick={() => timeMode !== 'date' && toggleTimeMode()}>Data</button>
+        </div>
+
+        {/* Toggle tema chiaro/scuro. */}
+        <button type="button" className="topbar__icon-btn" onClick={toggleTheme}
+                title={theme === 'dark' ? 'Passa al tema chiaro' : 'Passa al tema scuro'}
+                aria-label={theme === 'dark' ? 'Passa al tema chiaro' : 'Passa al tema scuro'}>
+          {theme === 'dark' ? '☀' : '☾'}
+        </button>
+
+        <div className="topbar__identity">
+          <span className="topbar__avatar" aria-hidden="true">{initial}</span>
+          <span className="topbar__id-text">
+            <span className="topbar__user">{user.name}</span>
+            <span className="topbar__role">{roleLabel(user.role)}</span>
+          </span>
+        </div>
+
         <button className="btn btn-ghost topbar__logout" onClick={logout}>Esci</button>
       </div>
     </header>

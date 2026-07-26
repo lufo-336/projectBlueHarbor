@@ -32,22 +32,37 @@ h1, h2 { margin-top: 0; }
 .btn-danger:not(:disabled):hover { background: var(--red-bg); filter: none; }
 .btn-sm      { padding: 0.3rem 0.7rem; font-size: 0.82rem; }
 
-/* --- Campi di input --- */
+/* --- Controlli (input, select, textarea): un'unica "pelle" condivisa --- */
 .field { display: flex; flex-direction: column; gap: 0.3rem; }
 .field label { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); }
-.field input {
-  font: inherit; color: var(--text); background: var(--surface);
+
+.field input,
+.field textarea,
+select {
+  font: inherit; color: var(--text); background-color: var(--surface);
   border: 1px solid var(--border); border-radius: var(--radius-md);
-  padding: 0.55rem 0.75rem;
+  padding: 0.5rem 0.75rem;
 }
-.field input:focus { outline: 2px solid var(--sahara); outline-offset: 1px; }
+.field input:focus,
+.field textarea:focus,
+select:focus { outline: 2px solid var(--sahara); outline-offset: 1px; }
+
+/* Select: freccia custom uguale in ogni tema (niente stile nativo di sistema). */
+select {
+  appearance: none; -webkit-appearance: none; cursor: pointer;
+  padding-right: 2rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none' stroke='%238A97B5' stroke-width='2'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 0.6rem center; background-size: 0.8rem;
+}
 
 /* Variante inline (etichetta + controllo su una riga), usata nei filtri. */
 .field--inline {
   flex-direction: row; align-items: center; gap: 0.4rem;
   color: var(--text-muted); font-size: 0.85rem;
 }
-.field--inline select { font: inherit; padding: 0.3rem 0.5rem; }
+/* Densità ridotta per i controlli inline/di tabella, ma stessa pelle. */
+.field--inline select,
+.field--inline input { padding-top: 0.35rem; padding-bottom: 0.35rem; }
 
 /* --- Card e badge --- */
 .card {
