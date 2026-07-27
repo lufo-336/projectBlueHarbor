@@ -38,4 +38,50 @@ public class SystemController : ControllerBase
         var day1 = await _context.Settings.FirstOrDefaultAsync(s => s.Key == "Day1Date");
         return Ok(new { currentDay, day1Date = day1?.Value });
     }
+
+    /// <summary>
+    /// Riepilogo del terminal a colpo d'occhio (per la navbar, ogni ruolo):
+    /// conteggi navi per stato e banchine occupate ORA sul totale.
+    /// </summary>
+    [HttpGet("summary")]
+    public async Task<IActionResult> GetSummary()
+    {
+        var setting = await _context.Settings.FirstOrDefaultAsync(s => s.Key == "CurrentVirtualDay");
+        var currentDay = (setting is not null && int.TryParse(setting.Value, out var d)) ? d : 0;
+
+        var pending = await _context.Ships.CountAsync(s => s.Status == ShipStatus.Pending);
+        var assigned = await _context.Ships.CountAsync(s => s.Status == ShipStatus.Assigned);
+        var departed = await _context.Ships.CountAsync(s => s.Status == ShipStatus.Departed);
+
+        // Stato ORA di ogni banchina (per la mini-mappa in navbar): occupata se
+        // un'assegnazione copre il giorno corrente, in manutenzione se una finestra
+        // lo copre, altrimenti libera. Intervalli [Start, End).
+        var berthsRaw = await _context.Berths
+            .OrderBy(b => b.Id)
+            .Select(b => new
+            {
+                b.Id,
+                b.Name,
+                b.Size,
+                Occupied = b.Ships.Any(s => s.Status == ShipStatus.Assigned
+                    && s.OccupationStartDay != null
+                    && s.OccupationStartDay <= currentDay
+                    && currentDay < s.OccupationStartDay + s.Duration),
+                Maintenance = b.Maintenances.Any(m => m.StartDay <= currentDay && currentDay < m.EndDay),
+            })
+            .ToListAsync();
+
+        var berths = berthsRaw.Select(b => new
+        {
+            b.Id,
+            b.Name,
+            b.Size,
+            State = b.Maintenance ? "maintenance" : (b.Occupied ? "occupied" : "free"),
+        }).ToList();
+
+        var berthsTotal = berths.Count;
+        var berthsOccupied = berths.Count(b => b.State == "occupied");
+
+        return Ok(new { currentDay, pending, assigned, departed, berthsTotal, berthsOccupied, berths });
+    }
 }

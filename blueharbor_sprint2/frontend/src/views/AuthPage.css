@@ -1,4 +1,17 @@
-.auth-page { min-height: 100svh; display: grid; grid-template-columns: 1.2fr 1fr; }
+.auth-page { min-height: 100svh; display: grid; grid-template-columns: 1.2fr 1fr; position: relative; }
+
+/* Strumenti disponibili anche prima del login: lingua + tema. */
+.auth-tools {
+  position: absolute; top: 1rem; right: 1rem; z-index: 2;
+  display: flex; align-items: center; gap: 0.5rem;
+}
+.auth-theme-toggle {
+  width: 2.2rem; height: 2.2rem; border-radius: 999px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; font-size: 1.1rem; line-height: 1;
+  background: var(--surface); color: var(--text); border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm); transition: filter 120ms ease;
+}
+.auth-theme-toggle:hover { filter: brightness(1.08); }
 @media (max-width: 860px) {
   .auth-page { grid-template-columns: 1fr; }
   .auth-hero { display: none; }
@@ -20,7 +33,7 @@
 /* Colonna del form */
 .auth-panel {
   display: flex; align-items: center; justify-content: center;
-  background: var(--bg); padding: 2rem;
+  background: transparent; padding: 2rem; /* lascia trasparire lo sfondo mare */
 }
 .auth-form { width: min(360px, 100%); display: flex; flex-direction: column; gap: 1rem; }
 .auth-form__error {

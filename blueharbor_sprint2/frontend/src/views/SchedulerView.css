@@ -16,6 +16,12 @@
   display: inline-flex; align-items: center; gap: 0.4rem;
   font-size: 0.8rem; color: var(--text-muted);
 }
+.timeline-slider {
+  width: 140px; cursor: pointer; accent-color: var(--sahara);
+}
+.timeline-slider:disabled { opacity: 0.5; cursor: not-allowed; }
+.timeline-nav__range { min-width: 6.5rem; text-align: center; }
+.scheduler__goto { margin-left: 0.5rem; vertical-align: middle; }
 .timeline-legend {
   list-style: none; margin: 0; padding: 0;
   display: flex; flex-wrap: wrap; gap: 0.4rem 1rem;
@@ -80,6 +86,8 @@
   border: 1px solid var(--border); border-radius: var(--radius-md);
   padding: 0.6rem 0.8rem;
 }
+.pending-ship { transition: border-color 120ms ease, background 120ms ease; }
+.pending-ship:hover { border-color: var(--sahara-border); background: var(--surface); }
 .pending-ship.is-selected {
   border-color: var(--sahara);
   outline: 2px solid var(--sahara); outline-offset: -1px;
@@ -87,13 +95,75 @@
 .pending-ship__name { font-weight: 700; }
 .pending-ship__meta { margin-left: auto; color: var(--text-muted); font-size: 0.85rem; }
 
+/* --- Assegnazioni programmate (annullabili prima dell'inizio) --- */
+.scheduler__upcoming { margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 0.8rem; }
+.scheduler__upcoming h3 { margin: 0 0 0.2rem; font-size: 0.95rem; }
+.upcoming-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 0.5rem 0.7rem;
+}
+/* Altezza limitata: la card non supera la timeline e scorre con la rotella. */
+.scheduler__upcoming-list { max-height: 220px; overflow-y: auto; }
+.upcoming-item__info {
+  flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.1rem;
+  background: transparent; border: 0; padding: 0; cursor: pointer;
+  font: inherit; color: inherit; text-align: left;
+}
+.upcoming-item__info:hover .pending-ship__name { text-decoration: underline; }
+.upcoming-item__meta { color: var(--text-muted); font-size: 0.8rem; }
+
+/* --- Colonna sinistra ad altezza costante (desktop): la lista navi in attesa
+       scorre invece di spingere in basso il resto della pagina. --- */
+@media (min-width: 981px) {
+  /* La colonna sinistra si allunga fino all'altezza della timeline: la lista
+     navi in attesa prende tutto lo spazio disponibile (e scorre se serve),
+     le assegnazioni programmate restano in basso. */
+  .scheduler { align-items: stretch; }
+  .scheduler__pending { display: flex; flex-direction: column; min-height: 0; }
+  .scheduler__pending-list { flex: 1 1 auto; min-height: 80px; overflow-y: auto; padding-right: 2px; }
+  .scheduler__empty { flex: 1 1 auto; display: grid; place-items: center; text-align: center; margin: 0; }
+}
+
+/* --- Tooltip ricco sulla timeline (compare dopo un breve delay di hover) --- */
+.tl-tip {
+  position: fixed; z-index: 40; transform: translateX(-50%);
+  pointer-events: none; max-width: 240px;
+  display: flex; flex-direction: column; gap: 0.15rem;
+  background: var(--surface); color: var(--text);
+  border: 1px solid var(--border); border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md); padding: 0.55rem 0.7rem; font-size: 0.82rem;
+  animation: tl-tip-in 120ms ease-out;
+}
+@keyframes tl-tip-in { from { opacity: 0; } to { opacity: 1; } }
+.tl-tip strong { font-size: 0.9rem; }
+.tl-tip__row { color: var(--text-muted); }
+.tl-tip__row b { color: var(--text); font-weight: 600; }
+.tl-tip__notes {
+  margin-top: 0.3rem; padding-top: 0.3rem; border-top: 1px solid var(--border);
+  color: var(--text); white-space: pre-wrap;
+}
+
+/* Nome-nave cliccabile (salta nella timeline) nello storico. */
+.linklike {
+  background: transparent; border: 0; padding: 0; cursor: pointer;
+  font: inherit; color: var(--occupation); font-weight: 600; text-align: left;
+}
+.linklike:hover { text-decoration: underline; }
+
+/* --- Modale di modifica assegnazione --- */
+.assign-edit-form { display: flex; flex-direction: column; gap: 0.9rem; }
+.assign-edit-form textarea { resize: vertical; min-height: 72px; }
+.assign-edit-actions { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.assign-edit-spacer { flex: 1; }
+
 /* --- Timeline ---
    NB: repeat(14, ...) deve combaciare con TIMELINE_DAYS in SchedulerView.jsx */
 .timeline-scroll { overflow-x: auto; }
-.timeline { min-width: 980px; }
+.timeline { min-width: 1020px; }
 .timeline__row {
   display: grid;
-  grid-template-columns: 200px repeat(14, minmax(48px, 1fr));
+  grid-template-columns: 240px repeat(14, minmax(48px, 1fr));
   border-bottom: 1px solid var(--border);
 }
 .timeline__row--head { border-bottom: 2px solid var(--border); }
@@ -102,11 +172,22 @@
 
 .timeline__label {
   grid-row: 1; grid-column: 1;
-  display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
-  padding: 0.55rem 0.6rem; min-height: 56px;
+  /* Due righe (nome+taglia / stato+azione): altezza uniforme per TUTTE le
+     banchine, così la riga XL non "sballa" quando compare il tasto Assegna. */
+  display: flex; flex-direction: column; justify-content: center; gap: 0.3rem;
+  padding: 0.5rem 0.6rem; min-height: 62px;
+  /* Colonna "congelata": resta a sinistra mentre i giorni scorrono sotto. */
+  position: sticky; left: 0; z-index: 3;
+  background: var(--surface); border-right: 1px solid var(--border);
+}
+.timeline__row--head .timeline__label { z-index: 4; }
+.timeline__label-main, .timeline__label-sub {
+  display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;
 }
 .timeline__berth { font-weight: 700; font-size: 0.9rem; }
-.timeline__assign { padding: 0.25rem 0.6rem; font-size: 0.8rem; }
+/* Compatto quanto il pallino di stato: così la riga con "Assegna" resta
+   sotto il min-height dell'etichetta e tutte le banchine hanno pari altezza. */
+.timeline__assign { padding: 0.12rem 0.5rem; font-size: 0.72rem; }
 
 .timeline__head { grid-row: 1; text-align: center; padding: 0.35rem 0; color: var(--text-muted); font-size: 0.8rem; }
 .timeline__cell { grid-row: 1; border-left: 1px solid var(--border); }
@@ -138,4 +219,28 @@
   background: repeating-linear-gradient(135deg,
     var(--maintenance) 0 5px, var(--maintenance-alt) 5px 10px);
   color: #fff;
+}
+
+/* Hover: leggero risalto (segnala che al passaggio compare il tooltip). */
+.timeline__block { transition: filter 120ms ease; }
+.timeline__block:hover { filter: brightness(1.12); }
+/* Feedback: lampeggio della nave dopo che la timeline ci è "saltata" sopra. */
+.timeline__block.is-flash { animation: block-flash 0.65s ease-out 2; z-index: 2; }
+@keyframes block-flash {
+  0%   { box-shadow: 0 0 0 0 rgba(200, 164, 90, 0.9); }
+  70%  { box-shadow: 0 0 0 8px rgba(200, 164, 90, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(200, 164, 90, 0); }
+}
+
+/* Banchina aperta dalla navbar (clic sulla mini-mappa): riga + etichetta evidenziate. */
+.timeline__row.is-berth-flash { animation: berth-row-flash 1.5s ease-out; }
+@keyframes berth-row-flash {
+  0%, 100% { background: transparent; }
+  20%, 65% { background: var(--sahara-pale); }
+}
+.timeline__row.is-berth-flash .timeline__label { animation: berth-label-flash 1.5s ease-out; }
+@keyframes berth-label-flash {
+  0%   { box-shadow: inset 0 0 0 0 rgba(200, 164, 90, 0); }
+  20%, 65% { box-shadow: inset 0 0 0 2px var(--sahara); }
+  100% { box-shadow: inset 0 0 0 0 rgba(200, 164, 90, 0); }
 }

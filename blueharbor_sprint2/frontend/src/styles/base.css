@@ -3,13 +3,43 @@
 
 body {
   margin: 0;
+  min-height: 100svh;
   font-family: var(--font);
   color: var(--text);
-  background: var(--bg);
+  background-color: var(--bg);
+  /* Sfondo "mare": gradiente + onde tenui in basso, fisse allo scroll.
+     Tinte da --sea-1/--sea-2 (tema-aware); le onde restano leggere per non
+     disturbare la lettura di tabelle e timeline dentro le card. */
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 300' preserveAspectRatio='none'%3E%3Cpath fill='%234A90C2' fill-opacity='0.38' d='M0,170 C240,270 480,60 720,145 C960,230 1200,70 1440,170 L1440,300 L0,300 Z'/%3E%3Cpath fill='%233F86BE' fill-opacity='0.26' d='M0,215 C240,140 480,280 720,205 C960,130 1200,265 1440,200 L1440,300 L0,300 Z'/%3E%3Cpath fill='%235AA6D8' fill-opacity='0.18' d='M0,255 C240,205 480,290 720,250 C960,210 1200,285 1440,245 L1440,300 L0,300 Z'/%3E%3C/svg%3E"),
+    radial-gradient(1300px 520px at 50% -4%, rgba(74, 144, 194, 0.34), transparent 72%),
+    linear-gradient(180deg, var(--sea-1), var(--sea-2));
+  background-repeat: no-repeat, no-repeat, no-repeat;
+  background-position: bottom center, top center, center;
+  background-size: 100% 300px, 100% 560px, cover;
+  background-attachment: fixed, fixed, fixed;
   -webkit-font-smoothing: antialiased;
 }
 
+/* --- Scrollbar tema-aware: niente barra bianca fuori tema al buio --- */
+* { scrollbar-width: thin; scrollbar-color: var(--grey-400) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--grey-400); border-radius: 999px;
+  border: 2px solid transparent; background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* --- Accessibilità: anello di focus visibile da tastiera su ogni interattivo --- */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--sahara); outline-offset: 2px;
+}
+
 h1, h2 { margin-top: 0; }
+/* Gerarchia dei titoli coerente (una sola scala). */
+h2 { font-size: var(--fs-xl); }
+h3 { font-size: var(--fs-lg); }
 
 .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 
@@ -32,22 +62,40 @@ h1, h2 { margin-top: 0; }
 .btn-danger:not(:disabled):hover { background: var(--red-bg); filter: none; }
 .btn-sm      { padding: 0.3rem 0.7rem; font-size: 0.82rem; }
 
-/* --- Campi di input --- */
+/* --- Controlli (input, select, textarea): un'unica "pelle" condivisa --- */
 .field { display: flex; flex-direction: column; gap: 0.3rem; }
 .field label { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); }
-.field input {
-  font: inherit; color: var(--text); background: var(--surface);
+
+.field input,
+.field textarea,
+select {
+  font: inherit; color: var(--text); background-color: var(--surface-2);
   border: 1px solid var(--border); border-radius: var(--radius-md);
-  padding: 0.55rem 0.75rem;
+  padding: 0.5rem 0.75rem;
 }
-.field input:focus { outline: 2px solid var(--sahara); outline-offset: 1px; }
+.field input:focus,
+.field textarea:focus,
+select:focus { outline: 2px solid var(--sahara); outline-offset: 1px; }
+
+/* Select: freccia custom uguale in ogni tema (niente stile nativo di sistema). */
+select {
+  appearance: none; -webkit-appearance: none; cursor: pointer;
+  padding-right: 2rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none' stroke='%238A97B5' stroke-width='2'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 0.6rem center; background-size: 0.8rem;
+}
+/* La lista a tendina delle option deve seguire il tema (altrimenti al buio
+   il testo resta nero su fondo scuro e non si legge). */
+select option { background-color: var(--surface); color: var(--text); }
 
 /* Variante inline (etichetta + controllo su una riga), usata nei filtri. */
 .field--inline {
   flex-direction: row; align-items: center; gap: 0.4rem;
   color: var(--text-muted); font-size: 0.85rem;
 }
-.field--inline select { font: inherit; padding: 0.3rem 0.5rem; }
+/* Densità ridotta per i controlli inline/di tabella, ma stessa pelle. */
+.field--inline select,
+.field--inline input { padding-top: 0.35rem; padding-bottom: 0.35rem; }
 
 /* --- Card e badge --- */
 .card {

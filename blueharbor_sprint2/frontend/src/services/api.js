@@ -121,11 +121,17 @@ export const api = {
     return request(query ? `/api/ships?${query}` : '/api/ships');
   },
   createShip: (name, notes) => request('/api/ships', { method: 'POST', body: { name, notes } }),
+  updateShip: (shipId, name, notes) => request(`/api/ships/${shipId}`, { method: 'PUT', body: { name, notes } }),
   cancelShip: (shipId) => request(`/api/ships/${shipId}`, { method: 'DELETE' }),
 
   // --- Scheduler ---
   getSchedulerDashboard: () => request('/api/scheduler/dashboard'),
   assignShip: (shipId, berthId) => request(`/api/ships/${shipId}/assign`, { method: 'POST', body: { berthId } }),
+  // Annulla un'assegnazione prima che l'occupazione inizi (nave -> Pending).
+  unassignShip: (shipId) => request(`/api/ships/${shipId}/unassign`, { method: 'POST' }),
+  // Modifica un'assegnazione (banchina + nome + note) prima dell'inizio occupazione.
+  editAssignment: (shipId, berthId, name, notes) =>
+    request(`/api/ships/${shipId}/assignment`, { method: 'PUT', body: { berthId, name, notes } }),
 
   // --- Storico assegnazioni (sola lettura) ---
   // params opzionali: { shipId, berthId, eventType }.
@@ -141,6 +147,7 @@ export const api = {
 
   // --- Tempo virtuale ---
   getCurrentDay: () => request('/api/system/current-day'),
+  getSummary: () => request('/api/system/summary'),
   nextDay: () => request('/api/time/next-day', { method: 'POST' }),
 
   // --- Gestione accessi (ruolo Admin) ---

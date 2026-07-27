@@ -16,7 +16,8 @@ public record PendingShipDto(
     string Name,
     string Size,
     int ArrivalDay,
-    int Duration);
+    int Duration,
+    string? Notes);
 
 /// <summary>Stato di una banchina con la sua coda di occupazioni attive e le manutenzioni.</summary>
 public record BerthStatusDto(
@@ -34,9 +35,14 @@ public record BerthMaintenanceDto(
     int StartDay,
     int EndDay);
 
-/// <summary>Una singola occupazione sulla banchina: intervallo [StartDay, EndDay).</summary>
+/// <summary>Una singola occupazione sulla banchina: intervallo [StartDay, EndDay).
+/// AssignSeq è l'Id (crescente) dell'evento di assegnazione: serve a ordinare
+/// "ultima assegnata per prima" senza dipendere dalle date.</summary>
 public record BerthAssignmentDto(
     int ShipId,
     string ShipName,
+    string Size,
+    string? Notes,
     int StartDay,
-    int EndDay);
+    int EndDay,
+    int AssignSeq);

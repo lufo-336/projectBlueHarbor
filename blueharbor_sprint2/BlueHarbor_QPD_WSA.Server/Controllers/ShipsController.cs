@@ -37,6 +37,7 @@ public class ShipsController : ControllerBase
     //  Query param opzionali:
     //    ?status=Pending|Assigned|Departed   filtra per stato
     //    ?size=S|M|L|XL                        filtra per taglia
+    //    ?q=aur                                 ricerca per nome (contiene, ignora maiuscole)
     //    ?page=1 (>=1)                          pagina (default 1)
     //    ?pageSize=20 (1..100)                  ampiezza pagina (default 20)
     //  Ordinamento stabile per Id. Risposta: ShipPageResponse (items + meta + counts).
@@ -46,6 +47,7 @@ public class ShipsController : ControllerBase
     public async Task<IActionResult> GetShips(
         [FromQuery] string? status = null,
         [FromQuery] string? size = null,
+        [FromQuery] string? q = null,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20)
     {
@@ -100,12 +102,16 @@ public class ShipsController : ControllerBase
         var query = _context.Ships.AsQueryable();
         if (statusFilter is not null) query = query.Where(s => s.Status == statusFilter);
         if (sizeFilter is not null) query = query.Where(s => s.Size == sizeFilter);
+        // Ricerca per nome: EF traduce Contains in LIKE %q% (case-insensitive
+        // con la collation di default di SQL Server). Applicata prima di Skip/Take.
+        var nameQuery = q?.Trim();
+        if (!string.IsNullOrEmpty(nameQuery)) query = query.Where(s => s.Name.Contains(nameQuery));
 
         var total = await query.CountAsync();
         var totalPages = total == 0 ? 0 : (int)Math.Ceiling(total / (double)pageSize);
 
         var items = await query
-            .OrderBy(s => s.Id)
+            .OrderByDescending(s => s.Id) // più recenti in cima (registrazione = Id crescente)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .Select(s => new ShipDto(
@@ -135,10 +141,10 @@ public class ShipsController : ControllerBase
 
         // La nota è facoltativa (es. carico, priorità): stringa vuota -> NULL.
         var notes = string.IsNullOrWhiteSpace(request.Notes) ? null : request.Notes.Trim();
-        if (notes is { Length: > 255 })
+        if (notes is { Length: > 2000 })
         {
             return Problem(
-                detail: "La nota non può superare i 255 caratteri.",
+                detail: "La nota non può superare i 2000 caratteri.",
                 statusCode: StatusCodes.Status400BadRequest);
         }
 
@@ -194,6 +200,52 @@ public class ShipsController : ControllerBase
         await _context.SaveChangesAsync();
 
         return NoContent();
+    }
+
+    // ==========================================================================
+    //  PUT /api/ships/{id} — modifica i metadati (nome, note) di una nave.
+    //  Rientra nella responsabilità dell'Operatore ("mantiene le informazioni e
+    //  lo stato delle navi"): non tocca taglia/arrivo/durata né l'assegnazione.
+    // ==========================================================================
+    [HttpPut("{id:int}")]
+    [Authorize(Roles = "Operator,Admin")]
+    public async Task<IActionResult> UpdateShip(int id, [FromBody] UpdateShipRequest request)
+    {
+        var ship = await _context.Ships.FindAsync(id);
+        if (ship is null)
+        {
+            return Problem(
+                detail: $"Nave con id {id} non trovata.",
+                statusCode: StatusCodes.Status404NotFound);
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Name))
+        {
+            return Problem(
+                detail: "Il nome della nave non può essere vuoto.",
+                statusCode: StatusCodes.Status400BadRequest);
+        }
+
+        var notes = string.IsNullOrWhiteSpace(request.Notes) ? null : request.Notes.Trim();
+        if (notes is { Length: > 2000 })
+        {
+            return Problem(
+                detail: "La nota non può superare i 2000 caratteri.",
+                statusCode: StatusCodes.Status400BadRequest);
+        }
+
+        ship.Name = request.Name.Trim();
+        ship.Notes = notes;
+        await _context.SaveChangesAsync();
+
+        string? berthName = null;
+        if (ship.BerthId is not null)
+        {
+            var b = await _context.Berths.FindAsync(ship.BerthId);
+            berthName = b?.Name;
+        }
+        return Ok(new ShipDto(ship.Id, ship.Name, ship.Size, ship.ArrivalDay, ship.Duration,
+            ship.Status.ToString(), ship.BerthId, ship.OccupationStartDay, ship.Notes, berthName));
     }
 
     // ==========================================================================
@@ -304,5 +356,166 @@ public class ShipsController : ControllerBase
         // --- 8) Rispondo con una DTO (non l'entità, per evitare i cicli di navigazione EF -> 500) ---
         return Ok(new AssignShipResponse(
             ship.Id, ship.Name, ship.Size, berth.Id, startDay, ship.Status));
+    }
+
+    // ==========================================================================
+    //  POST /api/ships/{id}/unassign — annulla un'assegnazione PRIMA che
+    //  l'occupazione inizi: la nave torna Pending e si può riassegnare.
+    //  Deviazione consapevole dalla consegna (che vieta modifiche dopo
+    //  l'assegnazione), limitata al caso "correzione prima dell'effetto".
+    // ==========================================================================
+    [HttpPost("{id:int}/unassign")]
+    [Authorize(Roles = "Scheduler,Admin")]
+    public async Task<IActionResult> UnassignShip(int id)
+    {
+        var ship = await _context.Ships.FindAsync(id);
+        if (ship is null)
+        {
+            return Problem(
+                detail: $"Nave con id {id} non trovata.",
+                statusCode: StatusCodes.Status404NotFound);
+        }
+
+        if (ship.Status != ShipStatus.Assigned)
+        {
+            return Problem(
+                detail: $"Solo una nave assegnata può essere annullata (stato attuale: {ship.Status}).",
+                statusCode: StatusCodes.Status409Conflict);
+        }
+
+        var setting = await _context.Settings.FirstOrDefaultAsync(s => s.Key == "CurrentVirtualDay");
+        if (setting is null || !int.TryParse(setting.Value, out var currentDay))
+        {
+            return Problem(
+                detail: "CurrentVirtualDay non è configurato correttamente nel database.",
+                statusCode: StatusCodes.Status500InternalServerError);
+        }
+
+        // Consentito solo finché l'occupazione NON è ancora iniziata.
+        if (ship.OccupationStartDay is int start && currentDay >= start)
+        {
+            return Problem(
+                detail: "L'occupazione è già iniziata: l'assegnazione non è più annullabile.",
+                statusCode: StatusCodes.Status409Conflict);
+        }
+
+        // Torna Pending e rimuove la voce di storico 'Assigned' della assegnazione
+        // annullata (come se non fosse mai avvenuta).
+        ship.Status = ShipStatus.Pending;
+        ship.BerthId = null;
+        ship.OccupationStartDay = null;
+
+        var assignedRows = await _context.AssignmentHistory
+            .Where(h => h.ShipId == id && h.EventType == HistoryEventType.Assigned)
+            .ToListAsync();
+        _context.AssignmentHistory.RemoveRange(assignedRows);
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new { ship.Id, ship.Name, Status = ship.Status.ToString() });
+    }
+
+    // ==========================================================================
+    //  PUT /api/ships/{id}/assignment — modifica un'assegnazione (Scheduler):
+    //  cambia banchina (ricalcolando il primo slot libero), nome e note.
+    //  Consentito SOLO finché l'occupazione non è iniziata. Aggiorna la riga
+    //  di storico 'Assigned' per riflettere la modifica.
+    // ==========================================================================
+    [HttpPut("{id:int}/assignment")]
+    [Authorize(Roles = "Scheduler,Admin")]
+    public async Task<IActionResult> EditAssignment(int id, [FromBody] EditAssignmentRequest request)
+    {
+        var ship = await _context.Ships.FindAsync(id);
+        if (ship is null)
+        {
+            return Problem(detail: $"Nave con id {id} non trovata.",
+                statusCode: StatusCodes.Status404NotFound);
+        }
+
+        if (ship.Status != ShipStatus.Assigned)
+        {
+            return Problem(detail: $"Solo un'assegnazione può essere modificata (stato attuale: {ship.Status}).",
+                statusCode: StatusCodes.Status409Conflict);
+        }
+
+        var setting = await _context.Settings.FirstOrDefaultAsync(s => s.Key == "CurrentVirtualDay");
+        if (setting is null || !int.TryParse(setting.Value, out var currentDay))
+        {
+            return Problem(detail: "CurrentVirtualDay non è configurato correttamente nel database.",
+                statusCode: StatusCodes.Status500InternalServerError);
+        }
+
+        if (ship.OccupationStartDay is int st && currentDay >= st)
+        {
+            return Problem(detail: "L'occupazione è già iniziata: l'assegnazione non è più modificabile.",
+                statusCode: StatusCodes.Status409Conflict);
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Name))
+        {
+            return Problem(detail: "Il nome della nave non può essere vuoto.",
+                statusCode: StatusCodes.Status400BadRequest);
+        }
+        var notes = string.IsNullOrWhiteSpace(request.Notes) ? null : request.Notes.Trim();
+        if (notes is { Length: > 2000 })
+        {
+            return Problem(detail: "La nota non può superare i 2000 caratteri.",
+                statusCode: StatusCodes.Status400BadRequest);
+        }
+
+        var berth = await _context.Berths.FindAsync(request.BerthId);
+        if (berth is null)
+        {
+            return Problem(detail: $"Banchina con id {request.BerthId} non trovata.",
+                statusCode: StatusCodes.Status404NotFound);
+        }
+        if (!SchedulingRules.IsCompatible(ship.Size, berth.Size))
+        {
+            return Problem(detail: $"Nave di dimensione {ship.Size} non compatibile con banchina {berth.Size}.",
+                statusCode: StatusCodes.Status400BadRequest);
+        }
+
+        // Se cambia la banchina, ricalcolo il primo slot libero (escludendo questa
+        // nave). Altrimenti tengo l'occupazione attuale.
+        var startDay = ship.OccupationStartDay!.Value;
+        if (berth.Id != ship.BerthId)
+        {
+            var occupations = await _context.Ships
+                .Where(s => s.BerthId == berth.Id && s.Status == ShipStatus.Assigned && s.Id != ship.Id)
+                .Select(s => new { s.OccupationStartDay, s.Duration })
+                .ToListAsync();
+            var maintenances = await _context.BerthMaintenance
+                .Where(m => m.BerthId == berth.Id)
+                .Select(m => new { m.StartDay, m.EndDay })
+                .ToListAsync();
+            var intervals = occupations
+                .Select(o => (Start: o.OccupationStartDay!.Value, End: o.OccupationStartDay!.Value + o.Duration))
+                .Concat(maintenances.Select(m => (Start: m.StartDay, End: m.EndDay)))
+                .ToList();
+            startDay = SchedulingRules.ComputeOccupationStartDay(ship.ArrivalDay, ship.Duration, currentDay, intervals);
+            ship.BerthId = berth.Id;
+            ship.OccupationStartDay = startDay;
+        }
+
+        ship.Name = request.Name.Trim();
+        ship.Notes = notes;
+
+        // Riallineo la riga di storico 'Assigned' a nome/banchina/occupazione nuovi.
+        var histRow = await _context.AssignmentHistory
+            .Where(h => h.ShipId == id && h.EventType == HistoryEventType.Assigned)
+            .OrderByDescending(h => h.Id)
+            .FirstOrDefaultAsync();
+        if (histRow is not null)
+        {
+            histRow.ShipName = ship.Name;
+            histRow.BerthId = berth.Id;
+            histRow.BerthName = berth.Name;
+            histRow.OccupationStartDay = startDay;
+            histRow.OccupationEndDay = startDay + ship.Duration;
+        }
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new AssignShipResponse(ship.Id, ship.Name, ship.Size, berth.Id, startDay, ship.Status));
     }
 }

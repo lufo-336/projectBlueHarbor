@@ -7,9 +7,25 @@
 
 .operator__hint { color: var(--text-muted); font-size: 0.9rem; }
 
-.operator__form { display: flex; gap: 0.75rem; align-items: end; flex-wrap: wrap; }
-.operator__form .field { flex: 1; min-width: 220px; }
-.operator__form textarea { resize: vertical; font: inherit; }
+/* Form a griglia: riga 1 = nome + invio; riga 2 = note a piena larghezza.
+   Così la textarea può crescere (o essere ridimensionata) senza sfasare
+   nome e bottone, che restano allineati sopra. */
+.operator__form {
+  display: grid; gap: 0.75rem 1rem; align-items: end;
+  grid-template-columns: 1fr auto;
+}
+.operator__field-name  { grid-column: 1; grid-row: 1; }
+.operator__submit      { grid-column: 2; grid-row: 1; }
+.operator__field-notes { grid-column: 1 / -1; grid-row: 2; }
+@media (max-width: 720px) {
+  .operator__form { grid-template-columns: 1fr; }
+  .operator__field-name, .operator__submit, .operator__field-notes { grid-column: 1; grid-row: auto; }
+}
+/* La textarea cresce da sola col testo (JS), senza maniglia; oltre il massimo scorre. */
+.operator__form textarea { resize: none; overflow-y: auto; min-height: 64px; max-height: 200px; }
+.operator__name-row { display: flex; gap: 0.4rem; }
+.operator__name-row input { flex: 1; min-width: 0; }
+.operator__dice { padding: 0.5rem 0.7rem; line-height: 1; }
 .field__optional { color: var(--text-muted); font-weight: 400; font-size: 0.85em; }
 
 .operator__list-head {
@@ -37,4 +53,21 @@
 .operator__notes {
   max-width: 220px; white-space: nowrap;
   overflow: hidden; text-overflow: ellipsis; color: var(--text-muted);
+}
+
+/* Il nome è il dato-chiave della riga: più forte del resto. */
+.operator__name-cell { font-weight: 700; color: var(--text); }
+.operator__row-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+
+/* Form di modifica dentro il modale. */
+.operator__edit-form { display: flex; flex-direction: column; gap: 0.9rem; }
+.operator__edit-notes { resize: vertical; min-height: 96px; }
+.operator__edit-actions { display: flex; justify-content: flex-end; gap: 0.6rem; }
+.operator__search input { min-width: 160px; }
+
+/* Evidenziazione transitoria della nave appena creata. */
+.operator__table tr.is-new { animation: operator-new 2.6s ease-out; }
+@keyframes operator-new {
+  0%   { background: var(--sahara-pale); }
+  100% { background: transparent; }
 }

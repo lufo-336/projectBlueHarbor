@@ -140,7 +140,7 @@ public class AdminController : ControllerBase
         if (berthId is not null) query = query.Where(m => m.BerthId == berthId);
 
         var list = await query
-            .OrderBy(m => m.StartDay).ThenBy(m => m.Id)
+            .OrderByDescending(m => m.StartDay).ThenByDescending(m => m.Id) // più recenti/future in cima
             .Select(m => new MaintenanceDto(m.Id, m.BerthId, m.Berth!.Name, m.StartDay, m.EndDay))
             .ToListAsync();
 

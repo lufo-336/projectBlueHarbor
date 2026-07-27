@@ -15,7 +15,6 @@
 /* --- Form nuovo utente --- */
 .admin__form { display: flex; gap: 0.75rem; align-items: end; flex-wrap: wrap; }
 .admin__form .field { flex: 1; min-width: 180px; }
-.admin__form select { font: inherit; padding: 0.55rem 0.75rem; }
 
 /* --- Tabella utenti --- */
 .admin__table-wrap { overflow-x: auto; }
@@ -27,10 +26,17 @@
   color: var(--text-muted); font-size: 0.8rem;
   text-transform: uppercase; letter-spacing: 0.06em;
 }
-.admin__table select { font: inherit; padding: 0.3rem 0.5rem; }
+.admin__table select { padding-top: 0.35rem; padding-bottom: 0.35rem; }
 .admin__table tr.is-inactive { opacity: 0.6; }
+/* Va su un <div> DENTRO la cella, mai sulla <td>: un display:flex sulla cella la
+   toglie dal layout tabellare (non e' piu' table-cell, non si stira all'altezza
+   della riga) e il suo border-bottom finisce a un'altezza diversa dalle celle
+   vicine — le righe della tabella appaiono spezzate. */
 .admin__actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 .admin__you { color: var(--text-muted); font-size: 0.85em; }
 
 /* Nota esplicativa sopra i form/tabelle dell'Admin. */
 .admin__hint { color: var(--text-muted); font-size: 0.85rem; margin: 0 0 0.8rem; }
+/* Le righe di anteprima ("Finestra…", "Giorno corrente…") seguono il form:
+   staccale dal campo qui sopra così il testo non resta incollato all'input. */
+.admin__form + .admin__hint { margin-top: 0.9rem; }

@@ -44,7 +44,7 @@ public class SchedulerController : ControllerBase
         var pendingShips = await _context.Ships
             .Where(s => s.Status == ShipStatus.Pending)
             .OrderBy(s => s.ArrivalDay)
-            .Select(s => new PendingShipDto(s.Id, s.Name, s.Size, s.ArrivalDay, s.Duration))
+            .Select(s => new PendingShipDto(s.Id, s.Name, s.Size, s.ArrivalDay, s.Duration, s.Notes))
             .ToListAsync();
 
         // 3) Tutte le banchine con le loro occupazioni ATTIVE (navi Assigned).
@@ -59,13 +59,21 @@ public class SchedulerController : ControllerBase
                 b.Size,
                 Ships = b.Ships
                     .Where(s => s.Status == ShipStatus.Assigned)
-                    .Select(s => new { s.Id, s.Name, s.OccupationStartDay, s.Duration })
+                    .Select(s => new { s.Id, s.Name, s.Size, s.Notes, s.OccupationStartDay, s.Duration })
                     .ToList(),
                 Maintenances = b.Maintenances
                     .Select(m => new { m.Id, m.StartDay, m.EndDay })
                     .ToList()
             })
             .ToListAsync();
+
+        // Mappa nave -> Id dell'ultimo evento 'Assigned' (ordine di assegnazione).
+        var assignSeq = (await _context.AssignmentHistory
+                .Where(h => h.EventType == HistoryEventType.Assigned)
+                .GroupBy(h => h.ShipId)
+                .Select(g => new { ShipId = g.Key, Seq = g.Max(h => h.Id) })
+                .ToListAsync())
+            .ToDictionary(x => x.ShipId, x => x.Seq);
 
         var berths = berthsRaw
             .Select(b =>
@@ -74,8 +82,11 @@ public class SchedulerController : ControllerBase
                     .Select(s => new BerthAssignmentDto(
                         s.Id,
                         s.Name,
+                        s.Size,
+                        s.Notes,
                         s.OccupationStartDay!.Value,
-                        s.OccupationStartDay!.Value + s.Duration))
+                        s.OccupationStartDay!.Value + s.Duration,
+                        assignSeq.TryGetValue(s.Id, out var seq) ? seq : 0))
                     .OrderBy(a => a.StartDay)
                     .ToList();
 
