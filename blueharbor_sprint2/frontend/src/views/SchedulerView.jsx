@@ -36,7 +36,6 @@ export default function SchedulerView({ focusBerth = null }) {
   const [dashboard, setDashboard] = useState(null); // null = primo caricamento
   const [selectedShipId, setSelectedShipId] = useState(null);
   const [assigning, setAssigning] = useState(false);
-  const [unassigningId, setUnassigningId] = useState(null); // nave in fase di annullo assegnazione
   const [editingAssignment, setEditingAssignment] = useState(null); // assegnazione in modifica
   const [assignForm, setAssignForm] = useState({ berthId: '', name: '', notes: '' });
   const [savingAssign, setSavingAssign] = useState(false);
@@ -194,7 +193,6 @@ export default function SchedulerView({ focusBerth = null }) {
   // Annulla un'assegnazione finché l'occupazione non è iniziata (torna Pending).
   async function handleUnassign(a) {
     if (!window.confirm(t('scheduler.confirmUnassign', { name: a.shipName }))) return;
-    setUnassigningId(a.shipId);
     try {
       await api.unassignShip(a.shipId);
       showSuccess(t('scheduler.toastUnassigned', { name: a.shipName }));
@@ -202,8 +200,6 @@ export default function SchedulerView({ focusBerth = null }) {
       await Promise.all([loadDashboard(), loadHistory()]);
     } catch (err) {
       showError(err.message);
-    } finally {
-      setUnassigningId(null);
     }
   }
 
