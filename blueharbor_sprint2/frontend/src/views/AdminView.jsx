@@ -189,17 +189,19 @@ function UserManagement() {
                         {u.isActive ? t('admin.active') : t('admin.inactive')}
                       </span>
                     </td>
-                    <td className="admin__actions">
-                      <button type="button" className="btn btn-ghost btn-sm" disabled={busy}
-                              onClick={() => resetPassword(u)}>
-                        {t('admin.resetPassword')}
-                      </button>
-                      <button type="button" className={`btn btn-sm ${u.isActive ? 'btn-danger' : 'btn-gold'}`}
-                              disabled={busy || (isSelf && u.isActive)}
-                              title={isSelf && u.isActive ? t('admin.cannotSelfDeactivate') : undefined}
-                              onClick={() => toggleActive(u)}>
-                        {u.isActive ? t('admin.deactivate') : t('admin.reactivate')}
-                      </button>
+                    <td>
+                      <div className="admin__actions">
+                        <button type="button" className="btn btn-ghost btn-sm" disabled={busy}
+                                onClick={() => resetPassword(u)}>
+                          {t('admin.resetPassword')}
+                        </button>
+                        <button type="button" className={`btn btn-sm ${u.isActive ? 'btn-danger' : 'btn-gold'}`}
+                                disabled={busy || (isSelf && u.isActive)}
+                                title={isSelf && u.isActive ? t('admin.cannotSelfDeactivate') : undefined}
+                                onClick={() => toggleActive(u)}>
+                          {u.isActive ? t('admin.deactivate') : t('admin.reactivate')}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
