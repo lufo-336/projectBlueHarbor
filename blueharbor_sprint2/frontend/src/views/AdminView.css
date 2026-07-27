@@ -33,3 +33,6 @@
 
 /* Nota esplicativa sopra i form/tabelle dell'Admin. */
 .admin__hint { color: var(--text-muted); font-size: 0.85rem; margin: 0 0 0.8rem; }
+/* Le righe di anteprima ("Finestra…", "Giorno corrente…") seguono il form:
+   staccale dal campo qui sopra così il testo non resta incollato all'input. */
+.admin__form + .admin__hint { margin-top: 0.9rem; }
