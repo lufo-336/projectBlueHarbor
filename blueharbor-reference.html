@@ -438,7 +438,7 @@
     <ol>
       <li><a href="#sommario">Sommario esecutivo</a></li>
       <li><a href="#stato">Stato attuale</a></li>
-      <li><a href="#stasera">Riparato stasera</a></li>
+      <li><a href="#stasera">Cronaca — frontend scollegato</a></li>
       <li><a href="#architettura">Architettura</a></li>
       <li><a href="#dati">Modello dati</a></li>
       <li><a href="#dominio">Regole di dominio</a></li>
@@ -456,15 +456,16 @@
       <p class="cover__eyebrow">Learning by Project — WSA · ITS ICT Piemonte</p>
       <h1>BlueHarbor Terminal, spiegato dall'inizio alla fine</h1>
       <p class="cover__lede">
-        Tutto quello che serve per parlarne con lo sponsor domani: cosa fa il sistema, come
-        è costruito, cosa funziona davvero oggi e cosa manca ancora. Fonte di verità: il
-        codice in <code>blueharbor_sprint2</code>, letto e verificato in esecuzione stasera.
+        Tutto quello che serve per parlarne con lo sponsor: cosa fa il sistema, come è
+        costruito, cosa funziona davvero oggi e cosa manca ancora. Fonte di verità: il
+        codice in <code>blueharbor_sprint2</code>, letto e verificato eseguendo l'applicazione.
       </p>
       <div class="cover__meta">
         <span><strong>Repo</strong> lufo-336/projectBlueHarbor</span>
         <span><strong>Stack</strong> React + Vite · ASP.NET Core · SQL Server</span>
         <span><strong>Redatto</strong> 7 luglio 2026</span>
         <span><strong>Rivisto</strong> 22 luglio 2026 — rifiniture (reset, timeline navigabile, data reale, PBKDF2) + banchine in manutenzione + deploy cloud su Azure</span>
+        <span><strong>Rivisto</strong> 29 luglio 2026 — rifacimento dell'interfaccia (PR #8: navbar con riepilogo del terminal e mini-mappa banchine, bilingue IT/EN, tema chiaro/scuro) e documenti di consegna in <code>docs/consegna-finale/</code> (PR #9)</span>
       </div>
     </div>
 
@@ -478,13 +479,18 @@
         e le navi che finiscono l'occupazione liberano la banchina.
       </p>
       <p>
-        Il backend (ASP.NET Core + SQL Server) è <strong>completo e corretto</strong>: l'ho
-        rimesso in piedi stasera e testato in diretta contro il database reale. Il frontend
-        aveva invece un problema serio — le due schermate principali mostravano una dashboard
-        finta al posto delle funzionalità vere, per via di un restyling grafico che ha
-        sovrascritto il collegamento alle API. L'ho ricollegato stasera: la sezione
-        <a href="#stasera">"Riparato stasera"</a> elenca esattamente cosa, e la
-        <a href="#demo">cheat sheet finale</a> ti dà il percorso passo-passo da seguire domani.
+        Oggi il sistema è <strong>completo e in produzione</strong>: gira su Azure, con rilascio
+        automatico da GitHub Actions che pubblica solo se i test passano. Tre ruoli — Operatore,
+        Scheduler e Admin — con permessi verificati sul server a ogni chiamata, storico
+        append-only esportabile e finestre di manutenzione delle banchine.
+      </p>
+      <p>
+        La strada per arrivarci non è stata lineare, e vale la pena saperlo: a inizio luglio il
+        frontend mostrava una dashboard finta al posto delle funzionalità vere, perché un
+        restyling grafico aveva sovrascritto il collegamento alle API. La sezione
+        <a href="#stasera">§3</a> racconta quel guasto per esteso; a fine luglio l'interfaccia è
+        stata poi ridisegnata da capo (<a href="#sprint">§9</a>). La
+        <a href="#demo">cheat sheet finale</a> dà il percorso passo-passo per la dimostrazione.
       </p>
     </section>
 
@@ -494,12 +500,12 @@
         <div class="statuscard">
           <div class="statuscard__label">Backend</div>
           <div class="statuscard__value"><span class="chip chip--good">Solido</span></div>
-          <div class="statuscard__note">Build pulita, API testate una a una stasera</div>
+          <div class="statuscard__note">Build pulita, API verificate una a una; 26 unit test come <em>gate</em> del rilascio</div>
         </div>
         <div class="statuscard">
           <div class="statuscard__label">Frontend</div>
-          <div class="statuscard__value"><span class="chip chip--good">Ricollegato</span></div>
-          <div class="statuscard__note">Era su dati finti fino a stasera — vedi §3</div>
+          <div class="statuscard__value"><span class="chip chip--good">Rifatto</span></div>
+          <div class="statuscard__note">Interfaccia ridisegnata a fine luglio (PR #8): navbar operativa, bilingue IT/EN, tema chiaro/scuro. Il collegamento alle API era stato ripristinato il 7 luglio — vedi §3</div>
         </div>
         <div class="statuscard">
           <div class="statuscard__label">Sicurezza login</div>
@@ -508,20 +514,31 @@
         </div>
         <div class="statuscard">
           <div class="statuscard__label">Sprint completati</div>
-          <div class="statuscard__value">6<span style="color:var(--muted); font-size:0.9rem;"> / 10</span></div>
-          <div class="statuscard__note">Sprint 7–10 non ancora iniziati</div>
+          <div class="statuscard__value">9<span style="color:var(--muted); font-size:0.9rem;"> / 10</span></div>
+          <div class="statuscard__note">Resta parziale solo lo Sprint 10 (accessibilità)</div>
+        </div>
+        <div class="statuscard">
+          <div class="statuscard__label">In produzione</div>
+          <div class="statuscard__value"><span class="chip chip--good">Online</span></div>
+          <div class="statuscard__note">Azure Container Apps + Azure SQL, rilascio automatico da GitHub Actions con i test come <em>gate</em></div>
         </div>
       </div>
       <p>
-        In una frase: <strong>il motore funziona</strong> (generazione navi, accodamento,
-        avanzamento del tempo, login), <strong>la carrozzeria era scollegata</strong> e ora è
-        stata rimessa a posto. Nessuna riscrittura è servita — i pezzi giusti esistevano già
-        nel codice, erano solo orfani.
+        In una frase: <strong>l'applicazione è completa e in produzione</strong>. Il motore —
+        generazione navi, accodamento, avanzamento del tempo, login per ruolo — funziona end-to-end
+        ed è coperto da test; l'interfaccia, dopo il rifacimento di fine luglio, è quella che si
+        mostra in demo. Le sezioni §3 e §10 conservano la storia dei problemi incontrati: sono
+        cronaca, non stato attuale.
       </p>
     </section>
 
     <section id="stasera">
-      <div class="section-head"><span class="section-num">03</span><h2>Cosa ho riparato stasera</h2></div>
+      <div class="section-head"><span class="section-num">03</span><h2>Cronaca — il frontend scollegato (7 luglio)</h2></div>
+      <p class="cover__lede" style="margin-bottom:1rem;">
+        Questa sezione è <strong>storia, non stato attuale</strong>: racconta un problema trovato e
+        risolto il 7 luglio. Da allora il frontend è stato anche interamente ridisegnato (§9). Resta
+        qui perché è il guasto più istruttivo che abbiamo incontrato.
+      </p>
       <p>
         Il 25 giugno un restyling grafico del frontend ("sprint5+ tommy-ale frontend") ha
         sostituito le viste Operatore/Scheduler — che chiamavano davvero le API — con una
@@ -769,7 +786,23 @@
           </tbody>
         </table>
       </div>
-      <p>Il cuore dell'applicazione (Sprint 1–5) è completo e funziona end-to-end — verificato girando l'app dal vivo, non solo leggendo il codice. Sprint 6 è completo: login, <strong>protezione degli endpoint per ruolo</strong> (401/403) e hashing PBKDF2 con salt (dal 22 luglio, con migrazione trasparente dei vecchi hash al primo login). Sono state poi consegnate — sul branch <code>feature/ship-notes</code> — le evoluzioni degli Sprint 7 (nota facoltativa in creazione nave, paginazione/filtri e validazione su <code>GET /api/ships</code>, annullamento di una nave solo se Pending) e 8 (storico assegnazioni append-only con export CSV, tutto verificato dal vivo), più un primo passo dello Sprint 10 (timeline Scheduler più leggibile: stato libero/occupato distinguibile senza colore — la <em>forma</em> del pallino, non la tinta — colonna "oggi" etichettata a testo, legenda, e blocchi occupazione con contrasto adeguato anche in tema scuro), lo Sprint 9 (packaging Docker: <code>docker compose up --build</code> avvia DB + app su una macchina pulita) e il ruolo <strong>Admin</strong> di piattaforma (gestione utenti + capacità di Operatore e Scheduler). Resta aperta solo la rifinitura finale dell'accessibilità (Sprint 10).</p>
+      <p>Il cuore dell'applicazione (Sprint 1–5) è completo e funziona end-to-end — verificato girando l'app dal vivo, non solo leggendo il codice. Sprint 6 è completo: login, <strong>protezione degli endpoint per ruolo</strong> (401/403) e hashing PBKDF2 con salt (dal 22 luglio, con migrazione trasparente dei vecchi hash al primo login). Sono state poi consegnate le evoluzioni degli Sprint 7 (nota facoltativa in creazione nave, paginazione/filtri e validazione su <code>GET /api/ships</code>, annullamento di una nave solo se Pending) e 8 (storico assegnazioni append-only con export CSV, tutto verificato dal vivo), più un primo passo dello Sprint 10 (timeline Scheduler più leggibile: stato libero/occupato distinguibile senza colore — la <em>forma</em> del pallino, non la tinta — colonna "oggi" etichettata a testo, legenda, e blocchi occupazione con contrasto adeguato anche in tema scuro), lo Sprint 9 (packaging Docker: <code>docker compose up --build</code> avvia DB + app su una macchina pulita) e il ruolo <strong>Admin</strong> di piattaforma (gestione utenti + capacità di Operatore e Scheduler). Resta aperta solo la rifinitura finale dell'accessibilità (Sprint 10).</p>
+      <h3>Rifacimento dell'interfaccia — 26-28 luglio (PR #8)</h3>
+      <p>
+        Ultimo intervento sul codice prima della consegna, tutto sul frontend. La barra superiore è
+        stata ridisegnata come strumento operativo invece che come semplice intestazione: mostra il
+        <strong>riepilogo del terminal</strong> e una <strong>mini-mappa delle banchine</strong>, le
+        cui celle sono cliccabili e aprono lo Scheduler sulla banchina scelta. La barra resta
+        visibile durante lo scorrimento. È stato completato il <strong>supporto bilingue IT/EN</strong>
+        e il passaggio fra tema chiaro e scuro. Sono stati corretti il contrasto dei controlli dei
+        form e l'impaginazione della tabella utenti nella vista Admin.
+      </p>
+      <p>
+        Stato del repository al 29 luglio: esiste <strong>solo <code>main</code></strong>, i branch di
+        lavoro sono stati eliminati dopo il merge. I documenti conclusivi della commessa —
+        presentazione, manuale d'uso e documentazione tecnica — stanno in
+        <code>blueharbor_sprint2/docs/consegna-finale/</code> (PR #9).
+      </p>
     </section>
 
     <section id="rischi">
@@ -784,12 +817,20 @@
         <p>26 unit test xUnit: 20 sull'algoritmo di accodamento (<code>SchedulingRules</code>, PR #3) e 6 su <code>PasswordHasher</code> (22 luglio). <code>dotnet test</code> fa parte della verifica standard. Restano scoperti i controller (servirebbero test d'integrazione).</p>
       </div>
       <div class="callout">
-        <div class="callout__label">Registrazione non disponibile</div>
-        <p>Il form "Sign Up" esiste graficamente ma non c'è un endpoint di registrazione nel backend. Da stasera mostra un messaggio chiaro invece di un errore JavaScript.</p>
+        <div class="callout__label">Correzione di un'assegnazione — la domanda più probabile in sede d'esame</div>
+        <p>La commessa esclude le <strong>riassegnazioni</strong>. Il sistema le rifiuta: a occupazione iniziata, qualsiasi modifica risponde errore. Prima che l'occupazione inizi, però, lo Scheduler può <strong>correggere</strong> un inserimento sbagliato — la banchina nuova viene rivalidata come una qualsiasi assegnazione e la modifica finisce nello storico. È un'assunzione <em>dichiarata</em>, non una scorciatoia, ma è il confine più sottile del progetto: conviene nominarlo prima che lo trovi qualcun altro.</p>
       </div>
       <div class="callout">
-        <div class="callout__label">Tre visioni di autenticazione da allineare in team</div>
-        <p>La card Trello Sprint 6 chiede sessioni cookie-based; il frontend già implementato usa token in <code>localStorage</code>; il backend implementato ora usa JWT Bearer. Frontend e backend combaciano tra loro ma non con la card — decisione di gruppo da chiudere prima di andare oltre.</p>
+        <div class="callout__label">Registrazione non disponibile — per scelta</div>
+        <p>Non esiste un endpoint di auto-registrazione: gli account li crea l'Admin. Il frontend lo comunica con un messaggio esplicito, non con un errore.</p>
+      </div>
+      <div class="callout">
+        <div class="callout__label">Autenticazione — divergenza chiusa</div>
+        <p>La card Trello dello Sprint 6 chiedeva sessioni cookie-based; l'implementazione ha adottato <strong>JWT Bearer</strong> con token in <code>localStorage</code>, coerente fra frontend e backend. La card non è stata aggiornata: fa fede il codice.</p>
+      </div>
+      <div class="callout">
+        <div class="callout__label">Gap dichiarati sull'infrastruttura cloud</div>
+        <p>Accesso al database via regola di firewall invece che con endpoint privato; pipeline autenticata con service principal invece che con identità federata; nessun controllo automatico dopo la pubblicazione. Scelte di semplificazione consapevoli, elencate anche nel documento tecnico.</p>
       </div>
     </section>
 
@@ -866,16 +907,28 @@ npm run dev   # http://localhost:5173</code></pre>
         <li><strong>Logout, poi login come Scheduler.</strong><span class="fine">La dashboard mostra le navi pending e le 8 banchine con il loro stato reale.</span></li>
         <li><strong>Assegna la nave appena creata</strong> a una banchina della stessa size — fai notare che il menu propone solo le banchine compatibili.</li>
         <li><strong>Premi "Next Day" un paio di volte</strong> nella Topbar e mostra il giorno virtuale avanzare — è il cuore concettuale del progetto: tempo simulato, non reale.</li>
+        <li><strong>Mostra una manutenzione</strong> dalla vista Admin: compare come blocco sulla timeline dello Scheduler e le assegnazioni successive la scavalcano.<span class="fine">Una manutenzione che incrocia una nave già assegnata viene rifiutata: è la dimostrazione più netta che le regole vengono prima della comodità.</span></li>
         <li><strong>Se hai tempo</strong>, apri <code>/scalar/v1</code> sul backend per mostrare tutte le API documentate e testabili da browser.</li>
       </ol>
+
+      <div class="callout">
+        <div class="callout__label">Documenti di consegna</div>
+        <p>
+          Presentazione, manuale d'uso e documentazione tecnica stanno in
+          <code>blueharbor_sprint2/docs/consegna-finale/</code>, insieme a un
+          <code>README.md</code> che spiega come si rigenerano. Sono file costruiti: non si
+          modificano a mano.
+        </p>
+      </div>
 
       <div class="callout callout--warn">
         <div class="callout__label">Prima di iniziare</div>
         <p>
-          Il database di sviluppo accumula navi di test e un giorno virtuale sempre più alto man
-          mano che si prova l'app. Se vuoi una demo pulita da un giorno 1 con poche navi, fai
-          girare lo script di reset del database <em>prima</em> di collegarti — non a metà
-          presentazione.
+          Il database accumula navi di prova e un giorno virtuale sempre più alto man mano che si
+          usa l'app. Se vuoi ripartire pulito, usa <strong>Reset simulazione</strong> dalla vista
+          Admin — riporta al giorno 1 cancellando navi e storico, lasciando intatti banchine e
+          utenti. Fallo <em>prima</em> di collegarti, non a metà presentazione: navi e storico
+          cancellati non si recuperano.
         </p>
       </div>
     </section>
@@ -884,7 +937,10 @@ npm run dev   # http://localhost:5173</code></pre>
       Documento generato da Claude a partire dal codice di <code>blueharbor_sprint2</code>,
       dalla cronologia git e dalla documentazione locale. Verificato eseguendo l'applicazione
       dal vivo il 7 luglio 2026; rivisto il 15 luglio 2026 per allinearlo al codice dopo
-      l'overhaul del team — endpoint ora protetti per ruolo e comando di avvio corretto.
+      l'overhaul del team — endpoint ora protetti per ruolo e comando di avvio corretto;
+      rivisto il 22 luglio 2026 (rifiniture, manutenzioni, deploy su Azure) e il
+      29 luglio 2026, alla vigilia della presentazione finale, per recepire il rifacimento
+      dell'interfaccia e i documenti di consegna.
     </footer>
   </main>
 </div>
