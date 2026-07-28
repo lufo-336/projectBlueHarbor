@@ -108,6 +108,14 @@ Prerequisiti: .NET SDK 10, Node.js 20+, SQL Server locale (istanza di default) c
    manutenzione dove c'è già una nave assegnata: viene **rifiutata** — le navi assegnate non si
    spostano mai.
 
+## Consegna
+
+I documenti conclusivi della commessa stanno in
+[`docs/consegna-finale/`](docs/consegna-finale/): presentazione (pptx + PDF),
+manuale d'uso e documentazione tecnica, entrambi con le schermate dell'app.
+Sono **file costruiti**: non si modificano a mano, si rigenerano dai sorgenti.
+Dettagli e ricette in `docs/consegna-finale/README.md`.
+
 ## Note tecniche per chi sviluppa
 
 - Il contratto API è documentato in ogni controller; il frontend vi accede solo
